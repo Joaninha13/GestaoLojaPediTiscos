@@ -1,0 +1,162 @@
+﻿@page "/categorias/create"
+
+@*@attribute [Authorize(Roles = "Admin, Funcionario")]*@
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Criar</PageTitle>
+
+<h1>Criar registo!</h1>
+
+<h4>Categorias</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="categorias" OnValidSubmit="AddCategorias" enctype="multipart/form-data" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert"/>
+
+            <div class="mb-3">
+
+                <div>
+                    @if (@categorias.Imagem != null && @categorias.Imagem.Length > 0){
+                        // no src Produtos\@Categorias.Imagem se houver algum problema
+                        <img title="@categorias.Nome" id="imagePreview" class="img-thumbnail  mt-2" src="@categorias.Imagem" style="width:100px;">
+                    }
+                    else{
+                        <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:100px;">
+                    }
+                </div>
+
+                <label for="nome" class="form-label">Nome:</label> 
+                <InputText id="nome" @bind-Value="categorias.Nome" class="form-control" /> 
+                <ValidationMessage For="() => categorias.Nome" class="text-danger" /> 
+
+            </div>
+            
+            <div class="mb-3">
+                <label for="ordem" class="form-label">Ordem na visualização:</label>
+                <InputNumber id="ordem" @bind-Value="categorias.Ordem" class="form-control" />
+                <ValidationMessage For="() => categorias.Ordem" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="imageUri" class="form-label">Imagem:</label>
+                <input id="imageUri"
+                       type="file"
+                       name="categorias.ImageFile"
+                       class="form-control"
+                       accept=".png, .jpg, .jpeg"
+                       onchange="document.getElementById('imagePreview').src = window.URL.createObjectURL(this.files[0])" />
+            </div>
+
+            <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+            <a href="/categorias" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+
+        </EditForm>
+
+        <div class="mt-3">
+            @if (!string.IsNullOrEmpty(MensagemErro)){
+                <div class="alert alert-danger">@MensagemErro</div>
+            }
+            @if (!string.IsNullOrEmpty(MensagemSucesso)){
+                <div class="alert alert-success">@MensagemSucesso</div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    public Categorias categorias { get; set; } = new();
+
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    public async Task AddCategorias(){
+
+        if (string.IsNullOrWhiteSpace(categorias.Nome) || categorias.Ordem == 0){
+            MensagemErro = "Os campos 'Nome' e 'Ordem' são obrigatórios.";
+            return;
+        }
+
+        using var context = DbFactory.CreateDbContext();
+
+        if (await context.Categorias.AnyAsync(c => c.Nome == categorias.Nome || c.Id == categorias.Id)){
+            MensagemErro = "Já existe uma categoria com este nome.";
+            return;
+        }
+
+        try
+        {
+            if (categorias.ImageFile != null){
+                if (categorias.ImageFile.Length > (200 * 1024)){
+                    MensagemErro = "O tamanho da imagem excede o limite de 200 KB.";
+                    return;
+                }
+
+                if (!isValidFileType(categorias.ImageFile)){
+                    MensagemErro = "Tipo de arquivo inválido. Use .jpg, .jpeg ou .png.";
+                    return;
+                }
+                else 
+                    categorias.UrlImagem = categorias.ImageFile.FileName;
+
+                using (var dataStream = new MemoryStream()){
+                    await categorias.ImageFile.CopyToAsync(dataStream);
+                    categorias.Imagem = dataStream.ToArray();
+                }
+            }
+
+            context.Categorias.Add(categorias);
+            await context.SaveChangesAsync();
+
+            MensagemSucesso = "Categoria adicionada com sucesso!";
+        }
+        catch (Exception ex){
+            MensagemErro = $"Erro ao adicionar categoria: {ex.Message}";
+        }
+
+        if (!string.IsNullOrEmpty(MensagemSucesso))
+            categorias = new Categorias(); // Limpa os campos
+    }
+
+    bool isValidFileType(IFormFile file)
+    {
+        string ext = Path.GetExtension(file.FileName);
+        return ext.ToLower() switch
+        {
+            ".jpg" => true,
+            ".jpeg" => true,
+            ".png" => true,
+            _ => false
+        };
+    }
+
+    // bool isValidFileType(IFormFile file)
+    // {
+    //     string ext = Path.GetExtension(file.Name);
+    //     switch (ext.ToLower())
+    //     {
+    //         case ".jpg":
+    //             return true;
+    //         case ".jpeg":
+    //             return true;
+    //         case ".png":
+    //             return true;
+    //         default:
+    //             return false;
+    //     }
+    // }
+
+    // bool CategoriaExists(string nome, int id){
+    //     using var context = DbFactory.CreateDbContext();
+    //     return context.Categorias.Any(e => e.Nome == nome) || context.Categorias.Any(e => e.Id == id);
+    // }
+
+}

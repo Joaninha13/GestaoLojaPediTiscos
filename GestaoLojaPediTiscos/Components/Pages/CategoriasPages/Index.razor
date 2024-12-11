@@ -1,0 +1,129 @@
+﻿@page "/categorias"
+
+@* @attribute [Authorize(Roles = "Admin, Funcionario")] *@
+
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using GestaoLojaPediTiscos.Entities
+@using GestaoLojaPediTiscos.Data
+
+@rendermode InteractiveServer
+
+@implements IAsyncDisposable
+
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Categorias</PageTitle>
+
+<h1>Listagem de Categorias</h1>
+
+@* Para Mensagens *@
+@{
+    var query = new Uri(NavigationManager.Uri).Query;
+    var message = System.Web.HttpUtility.ParseQueryString(query).Get("message");
+    if (!string.IsNullOrEmpty(message)){
+        <div class="alert alert-success">@message</div>
+    }
+}
+
+<p>
+    <a title="Nova categoria!" href="categorias/create"><img src="/img/novo.png" style="height:50px" /></a>
+</p>
+
+<QuickGrid Class="table" Items="@categoriasQueryable" @ref="refgrid" Pagination="@pagination">
+
+    <TemplateColumn Context="categoria">
+        @if (categoria.Imagem is not null && categoria.Imagem.Length > 0){
+            <img title="Imagem Actual: @categoria.UrlImagem" id="imagePreview" class="img-thumbnail  mt-2" src="data:image/*;base64,@(Convert.ToBase64String(categoria.Imagem))" style="width:100px">
+        }
+        else{
+            <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:100px;">
+        }
+
+    </TemplateColumn>
+
+    <PropertyColumn Property="categoria => categoria.Nome" Sortable="true">
+        <ColumnOptions>
+            <div class="search-box">
+                <input type="search" autofocus @onchange="PesquisaCategoria" placeholder="Pesquisar nome da categoria..." />
+            </div>
+        </ColumnOptions>
+    </PropertyColumn>
+
+    <PropertyColumn Property="categoria => categoria.Ordem" Title="Ordem" Sortable="true" />
+
+    <TemplateColumn Context="categoria">
+        <a title="Editar" href="@($"categorias/edit?id={categoria.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+        <a title="Detalhes" href="@($"categorias/details?id={categoria.Id}")"><img title="Detalhes" src="/img/detailsicon.png" style="height:30px" /></a> |
+        <a title="Apagar" href="@($"categorias/delete?id={categoria.Id}")"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></a>
+    </TemplateColumn>
+</QuickGrid>
+
+<div class="page-size-chooser">
+    Categorias por página:
+    <select @bind="@pagination.ItemsPerPage">
+        <option>5</option>
+        <option>10</option>
+        <option>15</option>
+    </select>
+</div>
+<div class="card-footer">
+    <Paginator State="@pagination" />
+</div>
+
+@code {
+    QuickGrid<Categorias>? refgrid;
+
+    // Paginação
+    PaginationState pagination = new PaginationState { ItemsPerPage = 5 };
+
+    List<Categorias> categoriasList = new();
+    IQueryable<Categorias>? categoriasQueryable;
+
+    private ApplicationDbContext context = default!;
+
+    protected override async void OnInitialized(){
+        context = DbFactory.CreateDbContext();
+        categoriasQueryable = Enumerable.Empty<Categorias>().AsQueryable();
+
+        CarregaCategorias();
+        ConvertListToQueryable();
+    }
+
+    private IList<Categorias> CarregaCategorias(){
+        categoriasList = context.Categorias
+            .OrderBy(x => x.Ordem)
+            .ThenBy(a => a.Nome)
+            .ToList();
+        return categoriasList;
+    }
+
+    // Converte Lista para Queryable
+    private void ConvertListToQueryable(){
+        categoriasQueryable = Enumerable.Empty<Categorias>().AsQueryable();
+
+        if (categoriasList is null) return;
+
+        foreach (var categoria in categoriasList.OrderBy(o => o.Id))
+            categoriasQueryable = categoriasQueryable.Concat(new[] { categoria }.AsQueryable());
+    }
+
+    // Pesquisa por Nome
+    void PesquisaCategoria(ChangeEventArgs e){
+        if (!string.IsNullOrEmpty(e.Value!.ToString())){
+            var result = categoriasQueryable.Where(c => c.Nome!.Contains(e.Value!.ToString()!, StringComparison.CurrentCultureIgnoreCase)).ToList();
+            categoriasQueryable = Enumerable.Empty<Categorias>().AsQueryable();
+
+            if (result.Count == 0)
+                return;
+
+            if (result.Any()){
+                foreach (var categoria in result.OrderBy(o => o.Id))
+                    categoriasQueryable = categoriasQueryable.Concat(new[] { categoria }.AsQueryable());
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}
