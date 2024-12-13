@@ -6,6 +6,7 @@ public class SubCategorias{
 
     public int Id { get; set; }
     public string? Nome { get; set; }
+    public int? Ordem { get; set; }
     public int? CategoriaId { get; set; }
     public Categorias Categoria { get; set; }
 

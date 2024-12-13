@@ -1,0 +1,115 @@
+﻿@page "/produtos/delete"
+
+@*@attribute [Authorize(Roles = "Admin, Funcionario")]*@
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Apagar</PageTitle>
+
+<h1>Apagar Registo</h1>
+
+<h3>Tem a certeza de que quer apagar este registo?</h3>
+<div>
+    <h2>Produtos</h2>
+    <hr />
+    @if (produtos is null){
+        <p><em>Carregando...</em></p>
+    }
+    else {
+
+        <div>
+            @if (@produtos.Imagem != null && @produtos.Imagem.Length > 0){
+                <img title="Imagem Actual: @produtos.UrlImagem" id="imagePreview" class="img-thumbnail  mt-2" src="data:image/*;base64,@(Convert.ToBase64String(produtos.Imagem))" style="width:200px">
+            }
+            else{
+                <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:50%;">
+            }
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@produtos.Nome</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Descricao</dt>
+            <dd class="col-sm-10">@produtos.Descricao</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Preco</dt>
+            <dd class="col-sm-10">@produtos.Preco</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Stock</dt>
+            <dd class="col-sm-10">@produtos.Stock</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Vendas</dt>
+            <dd class="col-sm-10">@produtos.NVendas</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Disponivel</dt>
+            <dd class="col-sm-10">@produtos.Disponivel</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">SubCategoriaId</dt>
+            <dd class="col-sm-10">@produtos.SubCategoria.Nome</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">ModoDispId</dt>
+            <dd class="col-sm-10">@produtos.ModoDispo.Nome</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">PromocaoId</dt>
+            <dd class="col-sm-10">
+                @if (produtos.Promocoes != null){
+                    @produtos.Promocoes.Nome;
+                }
+                else{
+                    <p>Sem Promoção</p>
+                }
+            </dd>
+        </dl>
+        <EditForm method="post" Model="produtos" OnValidSubmit="DeleteProdutos" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(produtos is null)" onclick="return confirm('Tem a certeza que deseja apagar este registo?')"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></button> |
+            <a href="/produtos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private Produtos? produtos;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        produtos = await context.Produtos.Include("SubCategoria").Include("ModoDispo").Include("Promocoes").FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (produtos is null)
+            NavigationManager.NavigateTo("/produtos");
+
+    }
+
+    private async Task DeleteProdutos(){
+
+        using var context = DbFactory.CreateDbContext();
+
+        if (produtos.NVendas > 0){
+            // Exibe uma mensagem ao usuário e não apaga
+            NavigationManager.NavigateTo($"/produtos?message=Erro: Não é possível apagar o produto porque há vendas associadas a esse produto");
+            return;
+        }
+
+
+        context.Produtos.Remove(produtos!);
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo($"/produtos?message=Produto apagado com sucesso");
+    }
+}

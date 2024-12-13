@@ -14,17 +14,18 @@ public class Produtos{
 
     public int? Stock { get; set; }
 
-    public bool? Disponivel { get; set; }
+    public int? NVendas { get; set; }
+
+    public bool Disponivel { get; set; }
 
     public int? SubCategoriaId { get; set; }
     public SubCategorias SubCategoria { get; set; }
 
-    public int? ModoDispId { get; set; }
+    public int? ModoDispoId { get; set; }
     public ModoDispo ModoDispo { get; set; }
 
-    public int? PromocaoId { get; set; }
-    public Promocoes Promocoes { get; set; }
-
+    public int? PromocoesId { get; set; }
+    public Promocoes? Promocoes { get; set; }
 
     public string? UrlImagem { get; set; }
     public byte[]? Imagem { get; set; }

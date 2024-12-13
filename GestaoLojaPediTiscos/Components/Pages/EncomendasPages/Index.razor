@@ -1,0 +1,64 @@
+﻿@page "/encomendas"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using GestaoLojaPediTiscos.Entities
+@using GestaoLojaPediTiscos.Data
+
+@rendermode InteractiveServer
+
+@implements IAsyncDisposable
+
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Encomendas</PageTitle>
+
+<h1>Listagem de Encomendas</h1>
+
+@* Para Mensagens *@
+@{
+    var query = new Uri(NavigationManager.Uri).Query;
+    var message = System.Web.HttpUtility.ParseQueryString(query).Get("message");
+    if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert alert-success">@message</div>
+    }
+}
+
+<QuickGrid Class="table" Items="context.Encomendas.OrderBy(o => o.DataEncomenda)" @ref="refgrid" Pagination="@pagination">
+    <PropertyColumn Property="encomendas => encomendas.Cliente.Nome" />
+    <PropertyColumn Property="encomendas => encomendas.DataEncomenda" Sortable="true"/>
+    <PropertyColumn Property="encomendas => encomendas.Estado" Sortable="true"/>
+    <PropertyColumn Property="encomendas => encomendas.Total" />
+
+    <TemplateColumn Context="encomendas">
+        <a title="Detalhes" href="@($"encomendas/details?id={encomendas.Id}")"><img title="Detalhes" src="/img/detailsicon.png" style="height:30px" /></a>
+    </TemplateColumn>
+</QuickGrid>
+
+<div class="page-size-chooser">
+    Encomendas por página:
+    <select @bind="@pagination.ItemsPerPage">
+        <option>5</option>
+        <option>10</option>
+        <option>15</option>
+    </select>
+</div>
+<div class="card-footer">
+    <Paginator State="@pagination" />
+</div>
+
+@code {
+    private ApplicationDbContext context = default!;
+
+    QuickGrid<Encomendas>? refgrid;
+
+    // Paginação
+    PaginationState pagination = new PaginationState { ItemsPerPage = 5 };
+
+    protected override void OnInitialized(){
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

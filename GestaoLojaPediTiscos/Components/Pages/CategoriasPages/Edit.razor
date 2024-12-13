@@ -13,8 +13,7 @@
 
 <h4>Categoria</h4>
 <hr />
-@if (categorias is null)
-{
+@if (categorias is null){
     <p><em>Carregando...</em></p>
 }
 else
@@ -86,7 +85,6 @@ else
     private Categorias? categorias { get; set; }
 
     public static string? uriActual;
-
     public static byte[]? imgActual { get; set; }
 
     public string MensagemErro { get; set; } = string.Empty;
@@ -167,8 +165,17 @@ else
 
             await context.SaveChangesAsync();
         }
-        catch (Exception ex){
-            MensagemErro = $"Erro ao editar categoria: {ex.Message}";
+        // catch (Exception ex){
+        //     MensagemErro = $"Erro ao editar categoria: {ex.Message}";
+        // }
+
+        // NavigationManager.NavigateTo($"/categorias?message=Categoria editada com sucesso.");
+
+        catch (DbUpdateConcurrencyException){
+            if (!CategoriasExists(categorias!.Id))
+                NavigationManager.NavigateTo("/categorias?message= Erro ao editar categoria");
+            else
+                throw;
         }
 
         NavigationManager.NavigateTo($"/categorias?message=Categoria editada com sucesso.");

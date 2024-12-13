@@ -1,0 +1,49 @@
+﻿@page "/mododispos/details"
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Detalhes</PageTitle>
+
+<h1>Detalhes do registo</h1>
+
+<div>
+    <h4>Modo de Disponibilização</h4>
+    <hr />
+    @if (mododispo is null){
+        <p><em>Carregar...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@mododispo.Nome</dd>
+            <dt class="col-sm-2">Descricao</dt>
+            <dd class="col-sm-10">@mododispo.Descricao</dd>
+        </dl>
+        <div>
+            <a href="@($"/mododispos/edit?id={mododispo.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+            <a href="/mododispos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+
+        </div>
+    }
+</div>
+
+@code {
+    private ModoDispo? mododispo;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        mododispo = await context.ModoDispo.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (mododispo is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

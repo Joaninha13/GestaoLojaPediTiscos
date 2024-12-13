@@ -4,6 +4,7 @@ using GestaoLojaPediTiscos.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GestaoLojaPediTiscos.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241211220300_update_ordem_subcategorias")]
+    partial class update_ordem_subcategorias
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -267,16 +270,16 @@ namespace GestaoLojaPediTiscos.Migrations
                     b.Property<string>("Descricao")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("Disponivel")
+                    b.Property<bool?>("Disponivel")
                         .HasColumnType("bit");
 
                     b.Property<byte[]>("Imagem")
                         .HasColumnType("varbinary(max)");
 
-                    b.Property<int?>("ModoDispoId")
+                    b.Property<int?>("ModoDispId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("NVendas")
+                    b.Property<int>("ModoDispoId")
                         .HasColumnType("int");
 
                     b.Property<string>("Nome")
@@ -285,7 +288,10 @@ namespace GestaoLojaPediTiscos.Migrations
                     b.Property<decimal?>("Preco")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int?>("PromocoesId")
+                    b.Property<int?>("PromocaoId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PromocoesId")
                         .HasColumnType("int");
 
                     b.Property<int?>("Stock")
@@ -316,7 +322,7 @@ namespace GestaoLojaPediTiscos.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("Ativa")
+                    b.Property<bool?>("Ativa")
                         .HasColumnType("bit");
 
                     b.Property<DateTime>("DataFim")
@@ -550,11 +556,15 @@ namespace GestaoLojaPediTiscos.Migrations
                 {
                     b.HasOne("GestaoLojaPediTiscos.Entities.ModoDispo", "ModoDispo")
                         .WithMany()
-                        .HasForeignKey("ModoDispoId");
+                        .HasForeignKey("ModoDispoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("GestaoLojaPediTiscos.Entities.Promocoes", "Promocoes")
                         .WithMany()
-                        .HasForeignKey("PromocoesId");
+                        .HasForeignKey("PromocoesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("GestaoLojaPediTiscos.Entities.SubCategorias", "SubCategoria")
                         .WithMany()

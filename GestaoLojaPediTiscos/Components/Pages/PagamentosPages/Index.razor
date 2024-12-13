@@ -1,0 +1,58 @@
+﻿@page "/pagamentos"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using GestaoLojaPediTiscos.Entities
+@using GestaoLojaPediTiscos.Data
+@implements IAsyncDisposable
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="pagamentos/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.Pagamentos">
+    <PropertyColumn Property="pagamentos => pagamentos.EncomendaId" />
+    <PropertyColumn Property="pagamentos => pagamentos.DataPagamento" />
+    <PropertyColumn Property="pagamentos => pagamentos.Valor" />
+    <PropertyColumn Property="pagamentos => pagamentos.Estado" />
+
+    <TemplateColumn Context="pagamentos">
+        <button class="btn btn-success btn-sm" @onclick="() => AceitarPagamento(pagamentos.Id)"><img title="Aceitar" src="/img/AceitarIcon.png" style="height:30px" /></button>
+        <button class="btn btn-danger btn-sm" @onclick="() => RejeitarPagamento(pagamentos.Id)"><img title="Rejeitar" src="/img/RejeitarIcon.png" style="height:30px" /></button>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private ApplicationDbContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    private async Task AceitarPagamento(int pagamentoId)
+    {
+        var pagamento = await context.Pagamentos.FirstOrDefaultAsync(p => p.Id == pagamentoId);
+        if (pagamento is not null){
+            pagamento.Estado = "Pago";
+            context.Pagamentos.Update(pagamento);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private async Task RejeitarPagamento(int pagamentoId)
+    {
+        var pagamento = await context.Pagamentos.FirstOrDefaultAsync(p => p.Id == pagamentoId);
+        if (pagamento is not null){
+            pagamento.Estado = "Rejeitado";
+            context.Pagamentos.Update(pagamento);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

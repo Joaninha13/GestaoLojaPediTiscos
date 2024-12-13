@@ -1,0 +1,116 @@
+﻿@page "/mododispos/edit"
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Editar</PageTitle>
+
+<h1>Editar registo!</h1>
+
+<h4>Modo de Disponibilização</h4>
+<hr />
+@if (ModoDispo is null){
+    <p><em>Carregando...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="ModoDispo" OnValidSubmit="UpdateModoDispo" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert"/>
+                <input type="hidden" name="ModoDispo.Id" value="@ModoDispo.Id" />
+
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome:</label>
+                    <InputText id="nome" @bind-Value="ModoDispo.Nome" class="form-control" />
+                    <ValidationMessage For="() => ModoDispo.Nome" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="descricao" class="form-label">Descricao:</label>
+                    <InputText id="descricao" @bind-Value="ModoDispo.Descricao" class="form-control" />
+                    <ValidationMessage For="() => ModoDispo.Descricao" class="text-danger" />
+                </div>
+
+                <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+                <a href="/mododispos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+
+            </EditForm>
+
+
+            <div class="mt-3">
+                @if (!string.IsNullOrEmpty(MensagemErro))
+                {
+                    <div class="alert alert-danger">@MensagemErro</div>
+                }
+                @if (!string.IsNullOrEmpty(MensagemSucesso))
+                {
+                    <div class="alert alert-success">@MensagemSucesso</div>
+                }
+            </div>
+
+        </div>
+    </div>
+}
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private ModoDispo? ModoDispo { get; set; }
+
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        ModoDispo ??= await context.ModoDispo.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (ModoDispo is null){
+            NavigationManager.NavigateTo($"/mododispos?message=SubCategoria não encontrada.");
+            return;
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateModoDispo()
+    {
+
+        if (string.IsNullOrWhiteSpace(ModoDispo.Nome) || string.IsNullOrWhiteSpace(ModoDispo.Descricao)){
+            MensagemErro = "Os campos 'Nome' e 'Descriçao' são obrigatórios.";
+            return;
+        }
+
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(ModoDispo!).State = EntityState.Modified;
+
+        if (await context.ModoDispo.AnyAsync(c => c.Nome == ModoDispo.Nome && c.Id != ModoDispo.Id)){
+            MensagemErro = "Já existe um Modo de destribuição com este nome.";
+            return;
+        }
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ModoDispoExists(ModoDispo!.Id))
+                NavigationManager.NavigateTo("/mododispos?message= Erro ao editar Modo de destribuição");
+            else
+                throw;
+        }
+
+        NavigationManager.NavigateTo($"/mododispos?message=Modo de destribuição editado com sucesso.");
+    }
+
+    private bool ModoDispoExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.ModoDispo.Any(e => e.Id == id);
+    }
+}

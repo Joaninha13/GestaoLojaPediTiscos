@@ -65,7 +65,7 @@
             }
             @if (!string.IsNullOrEmpty(MensagemSucesso)){
                 <div class="alert alert-success">@MensagemSucesso</div>
-            }
+            } 
         </div>
     </div>
 </div>
@@ -117,13 +117,13 @@
             await context.SaveChangesAsync();
 
             MensagemSucesso = "Categoria adicionada com sucesso!";
+            if (!string.IsNullOrEmpty(MensagemSucesso))
+                categorias = new Categorias(); // Limpa os campos
         }
         catch (Exception ex){
             MensagemErro = $"Erro ao adicionar categoria: {ex.Message}";
+            return;
         }
-
-        if (!string.IsNullOrEmpty(MensagemSucesso))
-            categorias = new Categorias(); // Limpa os campos
     }
 
     bool isValidFileType(IFormFile file)
@@ -137,26 +137,4 @@
             _ => false
         };
     }
-
-    // bool isValidFileType(IFormFile file)
-    // {
-    //     string ext = Path.GetExtension(file.Name);
-    //     switch (ext.ToLower())
-    //     {
-    //         case ".jpg":
-    //             return true;
-    //         case ".jpeg":
-    //             return true;
-    //         case ".png":
-    //             return true;
-    //         default:
-    //             return false;
-    //     }
-    // }
-
-    // bool CategoriaExists(string nome, int id){
-    //     using var context = DbFactory.CreateDbContext();
-    //     return context.Categorias.Any(e => e.Nome == nome) || context.Categorias.Any(e => e.Id == id);
-    // }
-
 }

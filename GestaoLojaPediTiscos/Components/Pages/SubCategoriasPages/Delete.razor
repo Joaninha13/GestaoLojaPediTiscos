@@ -1,0 +1,97 @@
+﻿@page "/subcategorias/delete"
+
+@* @attribute [Authorize(Roles = "Admin, Funcionario")] *@
+
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Apagar</PageTitle>
+
+<h1>Apagar registo</h1>
+
+<div>
+    <h2>SubCategorias </h2>
+    <hr />
+    @if (subcategorias is null){
+        <p><em>Carregando...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dd>
+                <div>
+                    @if (subcategorias.Imagem is not null){
+                        <img title="@subcategorias.UrlImagem" id="imagePreview" class="img-thumbnail  mt-2" src="data:image/*;base64,@(Convert.ToBase64String(subcategorias.Imagem))" style="width:100px">
+                    }
+                    else{
+                        <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:100px;">
+                    }
+                </div>
+            </dd>
+
+
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@subcategorias.Nome</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Ordem</dt>
+            <dd class="col-sm-10">@subcategorias.Ordem</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Categoria</dt>
+            <dd class="col-sm-10">@subcategorias.Categoria.Nome</dd>
+        </dl>
+
+        <EditForm method="post" Model="subcategorias" OnValidSubmit="DeleteSubCategorias" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(subcategorias is null)" onclick="return confirm('Tem a certeza que deseja apagar este registo?')"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></button> |
+            <a href="/subcategorias" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private SubCategorias? subcategorias;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        subcategorias = await context.SubCategorias.Include("Categoria").FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (subcategorias is null)
+            NavigationManager.NavigateTo("/subcategorias");
+        
+    }
+
+    private async Task DeleteSubCategorias(){
+
+        using var context = DbFactory.CreateDbContext();
+
+        //try
+        //{
+        // Verifica se há Produtos associadas à subcategoria
+        var hasProdutos = await context.Produtos.AnyAsync(m => m.SubCategoriaId == subcategorias.Id);
+        if (hasProdutos){
+            // Exibe uma mensagem ao usuário e não apaga
+            NavigationManager.NavigateTo($"/subcategorias?message=Erro: Não é possível apagar a subcategoria porque há produtos associados.");
+            return;
+        }
+
+        // Remove a Categoria
+        context.SubCategorias.Remove(subcategorias);
+        await context.SaveChangesAsync();
+        // Redireciona para a lista com a mensagem de sucesso
+        // NavigationManager.NavigateTo($"/categorias?message=Categoria apagada com sucesso");
+
+        //}
+        //catch (Exception ex){
+        // Em caso de erro, exibe uma mensagem
+        //Console.WriteLine($"Erro ao apagar categoria: {ex.Message}");
+        // Redireciona para a lista com a mensagem de sucesso
+        NavigationManager.NavigateTo($"/subcategorias?message=Categoria apagada com sucesso");
+        //}
+    }
+}

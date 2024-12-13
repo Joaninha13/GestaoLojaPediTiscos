@@ -1,0 +1,98 @@
+﻿@page "/encomendas/details"
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Detalhes</PageTitle>
+
+<h1>Detalhes da Encomenda</h1>
+
+<div>
+    <h2>Encomendas</h2>
+    <hr />
+    @if (encomendas is null){
+        <p><em>Carregando...</em></p>
+    }
+    else {
+        <div>
+            <button class="btn btn-success" @onclick="ConfirmarVenda"><img title="Aceitar" src="/img/AceitarIcon.png" style="height:30px" /></button>
+            <button class="btn btn-danger" @onclick="RejeitarVenda"><img title="Recusar" src="/img/RejeitarIcon.png" style="height:30px" /></button>
+            <button class="btn btn-primary" @onclick="ExpedirEncomenda"><img title="Recusar" src="/img/EnviarIcon.png" style="height:30px" /></button>
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-2">ClienteId</dt>
+            <dd class="col-sm-10">@encomendas.ClienteId</dd>
+            <dt class="col-sm-2">DataEncomenda</dt>
+            <dd class="col-sm-10">@encomendas.DataEncomenda</dd>
+            <dt class="col-sm-2">Estado</dt>
+            <dd class="col-sm-10">@encomendas.Estado</dd>
+            <dt class="col-sm-2">Total</dt>
+            <dd class="col-sm-10">@encomendas.Total</dd>
+        </dl>
+        <div>
+            <a href="/mododispos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </div>
+    }
+</div>
+
+@code {
+    private Encomendas? encomendas;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        encomendas = await context.Encomendas.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (encomendas is null)
+            NavigationManager.NavigateTo("/encomendas");
+    }
+
+    private async Task ConfirmarVenda(){
+        if (encomendas is not null){
+            using var context = DbFactory.CreateDbContext();
+            encomendas.Estado = "Confirmado";
+            context.Encomendas.Update(encomendas);
+            await context.SaveChangesAsync();
+            NavigationManager.NavigateTo($"/encomendas?message=Encomenda Confirmada com sucesso.");
+        }
+    }
+
+    private async Task RejeitarVenda(){
+        if (encomendas is not null){
+            using var context = DbFactory.CreateDbContext();
+            encomendas.Estado = "Rejeitado";
+            context.Encomendas.Update(encomendas);
+            await context.SaveChangesAsync();
+            NavigationManager.NavigateTo($"/encomendas?message=Encomenda Rejeitada com sucesso.");
+        }
+    }
+
+    private async Task ExpedirEncomenda()
+    {
+        if (encomendas is not null)
+        {
+            using var context = DbFactory.CreateDbContext();
+            var pagamento = await context.Pagamentos.FirstOrDefaultAsync(p => p.EncomendaId == encomendas.Id);
+
+            if (pagamento?.Estado == "Pago")
+            {
+                var envio = new Envios{
+                        EncomendaId = encomendas.Id,
+                        DataEnvio = DateTime.Now,
+                        Estado = "Enviado"
+                    };
+                context.Envios.Add(envio);
+                await context.SaveChangesAsync();
+                NavigationManager.NavigateTo($"/encomendas?message=Encomenda enviada com sucesso");
+            }
+            else
+                NavigationManager.NavigateTo($"/encomendas?message=Não é possível enviar a encomenda: pagamento não confirmado.");
+        }
+    }
+
+}

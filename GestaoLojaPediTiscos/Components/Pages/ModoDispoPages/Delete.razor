@@ -1,0 +1,55 @@
+﻿@page "/mododispos/delete"
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Apagar</PageTitle>
+
+<h1>Apagar registo</h1>
+
+<div>
+    <h2>ModoDispo</h2>
+    <hr />
+    @if (mododispo is null){
+        <p><em>Carregando...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@mododispo.Nome</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Descricao</dt>
+            <dd class="col-sm-10">@mododispo.Descricao</dd>
+        </dl>
+        <EditForm method="post" Model="mododispo" OnValidSubmit="DeleteModoDispo" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(mododispo is null)" onclick="return confirm('Tem a certeza que deseja apagar este registo?')"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></button> |
+            <a href="/mododispos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private ModoDispo? mododispo;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        mododispo = await context.ModoDispo.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (mododispo is null)
+            NavigationManager.NavigateTo("/mododispos");
+    }
+
+    private async Task DeleteModoDispo()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.ModoDispo.Remove(mododispo!);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo($"/mododispos?message=Modo distribuição apagado com sucesso");
+    }
+}

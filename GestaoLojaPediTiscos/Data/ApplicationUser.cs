@@ -10,6 +10,6 @@ public class ApplicationUser : IdentityUser{
     public string? Morada { get; set; }
     public string? Codigo_Postal { get; set; }
     public bool Ativo { get; set; }
-    public Byte[]? Foto { get; set; }
+    //public Byte[]? Foto { get; set; }
 
 }

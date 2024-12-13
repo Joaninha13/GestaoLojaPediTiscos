@@ -1,0 +1,225 @@
+﻿@page "/produtos/create"
+
+@* @attribute [Authorize(Roles = "Admin, Funcionario")] *@
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Criar Registo</PageTitle>
+
+<h1>Criar Registo</h1>
+
+<h4>Produto</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="produtos" OnValidSubmit="AddProdutos" enctype="multipart/form-data" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert"/>
+            <div class="mb-3">
+
+
+                <div>
+                    @if (@produtos.Imagem != null && @produtos.Imagem.Length > 0)
+                    {
+                        <img title="@produtos.Nome" id="imagePreview" class="img-thumbnail  mt-2" src="@produtos.Imagem" style="width:100px;">
+                    }
+                    else
+                    {
+                        <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:100px;">
+                    }
+                </div>
+
+                <label for="nome" class="form-label">Nome:</label> 
+                <InputText id="nome" @bind-Value="produtos.Nome" class="form-control" />
+                <ValidationMessage For="() => produtos.Nome" class="text-danger" />
+            </div>        
+             <div class="mb-3">
+                <label for="descricao" class="form-label">Descricao:</label> 
+                <InputText id="descricao" @bind-Value="produtos.Descricao" class="form-control" />
+                <ValidationMessage For="() => produtos.Descricao" class="text-danger" />
+            </div>        
+            <div class="mb-3">
+                <label for="preco" class="form-label">Preco:</label> 
+                <InputNumber id="preco" @bind-Value="produtos.Preco" class="form-control" />
+                <ValidationMessage For="() => produtos.Preco" class="text-danger" />
+            </div>        
+            <div class="mb-3">
+                <label for="stock" class="form-label">Stock:</label> 
+                <InputNumber id="stock" @bind-Value="produtos.Stock" class="form-control" />
+                <ValidationMessage For="() => produtos.Stock" class="text-danger" />
+            </div>        
+            <div class="mb-3">
+                <label for="disponivel" class="form-label">Disponivel:</label> 
+                <InputCheckbox id="disponivel" @bind-Value="produtos.Disponivel" class="form-check-input" />
+                <ValidationMessage For="() => produtos.Disponivel" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="mododispoid" class="form-label">Modo Entrega:</label>
+                <InputSelect id="mododispoid" class="form-group" @bind-Value="@produtos.ModoDispoId">
+                    <option value="-1">Disponibilização</option>
+                    @foreach (var item in selModoDispo){
+                        <option value="@item.Id ">@item.Nome</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="mb-3">
+                <label for="categoriaid" class="form-label">SubCategorias:</label>
+                <InputSelect id="ListaPaises" class="form-group" @bind-Value="@produtos.SubCategoriaId">
+                    <option value="-1">SubCategoria</option>
+                    @foreach (var item in selSubCategorias){
+                        <option value="@item.Id ">@item.Nome</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label for="categoriaid" class="form-label">Promoções:</label>
+                <InputSelect id="ListaPaises" class="form-group" @bind-Value="@produtos.PromocoesId">
+                    <option value="-1">Promoção</option>
+                    @foreach (var item in selPromocoes){
+                        <option value="@item.Id ">@item.Nome</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label for="imageUri" class="form-label">Imagem:</label>
+                <input id="imageUri"
+                       type="file"
+                       name="produtos.ImageFile"
+                       class="form-control"
+                       accept=".png, .jpg, .jpeg"
+                       onchange="document.getElementById('imagePreview').src = window.URL.createObjectURL(this.files[0])" />
+            </div>
+
+            <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+            <a href="/produtos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+
+        </EditForm>
+
+        <div class="mt-3">
+            @if (!string.IsNullOrEmpty(MensagemErro)){
+                <div class="alert alert-danger">@MensagemErro</div>
+            }
+            @if (!string.IsNullOrEmpty(MensagemSucesso)){
+                <div class="alert alert-success">@MensagemSucesso</div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Produtos produtos { get; set; } = new();
+
+    List<ModoDispo> selModoDispo = new();
+
+    List<SubCategorias> selSubCategorias = new();
+
+    List<Promocoes> selPromocoes = new();
+
+
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync(){
+        using var context = DbFactory.CreateDbContext();
+
+        selModoDispo = context.ModoDispo
+                        .OrderBy(X => X.Nome)
+                        .ToList();
+
+        selSubCategorias = context.SubCategorias
+                        .OrderBy(X => X.Nome)
+                        .ToList();
+
+        selPromocoes = context.Promocoes
+                        .OrderBy(X => X.Nome)
+                        .ToList();
+
+    }
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddProdutos(){
+
+
+        if (string.IsNullOrWhiteSpace(produtos.Nome)) {
+            MensagemErro = "O campo 'Nome' é obrigatório.";
+            return;
+        }
+
+        if (produtos.ModoDispoId == -1 || produtos.SubCategoriaId == -1){
+            MensagemErro = "Escolha uma 'subCategoria' e um 'Modo Entrega'";
+            return;
+        }
+
+        if (produtos.PromocoesId == -1)
+            produtos.PromocoesId = null;
+
+        produtos.NVendas = 0;
+
+        using var context = DbFactory.CreateDbContext();
+
+        if (await context.Produtos.AnyAsync(c => c.Nome == produtos.Nome || c.Id == produtos.Id)){
+            MensagemErro = "Já existe um produto com esse nome.";
+            return;
+        }
+
+        try{
+            if (produtos.ImageFile != null){
+
+                if (produtos.ImageFile.Length > (200 * 1024)){
+                    MensagemErro = "O tamanho da imagem excede o limite de 200 KB.";
+                    return;
+                }
+
+                if (!isValidFileType(produtos.ImageFile)){
+                    MensagemErro = "Tipo de arquivo inválido. Use .jpg, .jpeg ou .png.";
+                    return;
+                }
+                else 
+                    produtos.UrlImagem = produtos.ImageFile.FileName;
+
+                using (var dataStream = new MemoryStream())
+                {
+                    await produtos.ImageFile.CopyToAsync(dataStream);
+                    produtos.Imagem = dataStream.ToArray();
+                }
+            }
+
+
+            context.Produtos.Add(produtos);
+            await context.SaveChangesAsync();
+
+            MensagemSucesso = "Produto adicionado com sucesso!";
+            if (!string.IsNullOrEmpty(MensagemSucesso))
+                produtos = new Produtos(); // Limpa os campos
+
+        }
+        catch (Exception ex){
+            MensagemErro = $"Erro ao adicionar Produtos: {ex.Message}";
+            return;
+        }
+    }
+
+
+    bool isValidFileType(IFormFile file)
+    {
+        string ext = Path.GetExtension(file.FileName);
+        return ext.ToLower() switch
+        {
+            ".jpg" => true,
+            ".jpeg" => true,
+            ".png" => true,
+            _ => false
+        };
+    }
+}

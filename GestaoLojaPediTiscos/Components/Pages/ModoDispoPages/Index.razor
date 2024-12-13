@@ -1,0 +1,125 @@
+﻿@page "/mododispos"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using GestaoLojaPediTiscos.Entities
+@using GestaoLojaPediTiscos.Data
+
+@rendermode InteractiveServer
+
+@implements IAsyncDisposable
+
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>SubCategoria</PageTitle>
+
+<h1>Listagem de SubCategorias</h1>
+
+@* Para Mensagens *@
+@{
+    var query = new Uri(NavigationManager.Uri).Query;
+    var message = System.Web.HttpUtility.ParseQueryString(query).Get("message");
+    if (!string.IsNullOrEmpty(message)){
+        <div class="alert alert-success">@message</div>
+    }
+}
+
+<p>
+    <a title="Novo Modo Destribuição!" href="mododispos/create"><img src="/img/novo.png" style="height:50px" /></a>
+</p>
+
+<QuickGrid Class="table" Items="@ModoDispoQueryable" @ref="refgrid" Pagination="@pagination">
+
+    <PropertyColumn Property="mododispo => mododispo.Nome" Sortable="true">
+        <ColumnOptions>
+            <div class="search-box">
+                <input type="search" autofocus @onchange="PesquisaModoDispo" placeholder="Pesquisar nome Modo Distribuição..." />
+            </div>
+        </ColumnOptions>
+    </PropertyColumn>
+
+    <PropertyColumn Property="mododispo => mododispo.Descricao" Title="Descricao" Sortable="true" />
+
+    <TemplateColumn Context="mododispo">
+        <a title="Editar" href="@($"mododispos/edit?id={mododispo.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+        <a title="Detalhes" href="@($"mododispos/details?id={mododispo.Id}")"><img title="Detalhes" src="/img/detailsicon.png" style="height:30px" /></a> |
+        <a title="Apagar" href="@($"mododispos/delete?id={mododispo.Id}")"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></a>
+    </TemplateColumn>
+
+</QuickGrid>
+
+<div class="page-size-chooser">
+    Categorias por página:
+    <select @bind="@pagination.ItemsPerPage">
+        <option>5</option>
+        <option>10</option>
+        <option>15</option>
+    </select>
+</div>
+<div class="card-footer">
+    <Paginator State="@pagination" />
+</div>
+
+@code {
+    private ApplicationDbContext context = default!;
+
+
+    QuickGrid<ModoDispo>? refgrid;
+
+    // Paginação
+    PaginationState pagination = new PaginationState { ItemsPerPage = 5 };
+
+
+    List<ModoDispo> ModoDispoList = new();
+    IQueryable<ModoDispo>? ModoDispoQueryable;
+
+    protected override void OnInitialized(){
+        context = DbFactory.CreateDbContext();
+
+        ModoDispoQueryable = Enumerable.Empty<ModoDispo>().AsQueryable();
+
+
+        CarregaSubCategorias();
+        ConvertListToQueryable();
+    }
+
+    private IList<ModoDispo> CarregaSubCategorias()
+    {
+        ModoDispoList = context.ModoDispo
+            .OrderBy(x => x.Nome)
+            .ThenBy(a => a.Descricao)
+            .ToList();
+        return ModoDispoList;
+    }
+
+    // Converte Lista para Queryable
+    private void ConvertListToQueryable()
+    {
+        ModoDispoQueryable = Enumerable.Empty<ModoDispo>().AsQueryable();
+
+        if (ModoDispoList is null) return;
+
+        foreach (var mododispo in ModoDispoList.OrderBy(o => o.Id))
+            ModoDispoQueryable = ModoDispoQueryable.Concat(new[] { mododispo }.AsQueryable());
+    }
+
+    // Pesquisa por Nome
+    void PesquisaModoDispo(ChangeEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(e.Value!.ToString()))
+        {
+            var result = ModoDispoQueryable.Where(c => c.Nome!.Contains(e.Value!.ToString()!, StringComparison.CurrentCultureIgnoreCase)).ToList();
+            ModoDispoQueryable = Enumerable.Empty<ModoDispo>().AsQueryable();
+
+            if (result.Count == 0)
+                return;
+
+            if (result.Any())
+                foreach (var mododispo in result.OrderBy(o => o.Id))
+                    ModoDispoQueryable = ModoDispoQueryable.Concat(new[] { mododispo }.AsQueryable());
+        }
+    }
+
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

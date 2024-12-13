@@ -7,7 +7,7 @@ public class Envios{
     public Encomendas Encomenda { get; set; }
     public DateTime DataEnvio { get; set; }
 
-    public string? Estado { get; set; } //Enviado, Processamento, Entregue
+    public string? Estado { get; set; } //Enviado, NEnviado
 
 
 

@@ -1,0 +1,326 @@
+﻿@page "/produtos/edit"
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Editar</PageTitle>
+
+<h1>Editar este registo</h1>
+
+<h4>Produto</h4>
+<hr />
+@if (produtos is null)
+{
+    <p><em>Carregando...</em></p>
+}
+else{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="produtos" OnValidSubmit="UpdateProdutos" enctype="multipart/form-data" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert"/>
+                <input type="hidden" name="produtos.Id" value="@produtos.Id" />
+
+                <div class="mb-3">
+
+                    <div>
+                        @if (@produtos.Imagem != null && @produtos.Imagem.Length > 0){
+                            <img title="Imagem Actual: @produtos.UrlImagem" id="imagePreview" class="img-thumbnail  mt-2" src="data:image/*;base64,@(Convert.ToBase64String(produtos.Imagem))" style="width:200px">
+                        }
+                        else{
+                            <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:50%;">
+                        }
+                    </div>
+
+                    <label for="nome" class="form-label">Nome:</label>
+                    <InputText id="nome" @bind-Value="produtos.Nome" class="form-control" />
+                    <ValidationMessage For="() => produtos.Nome" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="descricao" class="form-label">Descricao:</label>
+                    <InputText id="descricao" @bind-Value="produtos.Descricao" class="form-control" />
+                    <ValidationMessage For="() => produtos.Descricao" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="preco" class="form-label">Preco:</label>
+                    <InputNumber id="preco" @bind-Value="produtos.Preco" class="form-control" />
+                    <ValidationMessage For="() => produtos.Preco" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="stock" class="form-label">Stock:</label>
+                    <InputNumber id="stock" @bind-Value="produtos.Stock" class="form-control" />
+                    <ValidationMessage For="() => produtos.Stock" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="disponivel" class="form-label">Disponivel:</label>
+                    <InputCheckbox id="disponivel" @bind-Value="produtos.Disponivel" class="form-check-input" />
+                    <ValidationMessage For="() => produtos.Disponivel" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="mododispoid" class="form-label">Modo Entrega Actual: @modoActual</label>
+                    <InputSelect id="mododispoid" class="form-group" @bind-Value="@produtos.ModoDispoId">
+                        <option value="-1">Disponibilização</option>
+                        @foreach (var item in selModoDispo){
+                            <option value="@item.Id ">@item.Nome</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="mb-3">
+                    <label for="categoriaid" class="form-label">SubCategoria Actual: @subCatActual</label>
+                    <InputSelect id="ListaSubCat" class="form-group" @bind-Value="@produtos.SubCategoriaId">
+                        <option value="-1">SubCategoria</option>
+                        @foreach (var item in selSubCategorias){
+                            <option value="@item.Id ">@item.Nome</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="mb-3">
+                    <label for="categoriaid" class="form-label">Promoções Actual:
+                        @if(produtos.PromocoesId != null){
+                            @promocaoActual
+                        }
+                        else{
+                            <b>Sem Promoção</b>
+                        }
+                    </label>
+                    <InputSelect id="ListaPromocoes" class="form-group" @bind-Value="@produtos.PromocoesId">
+                        <option value="-1">Promoção</option>
+                        @foreach (var item in selPromocoes){
+                            <option value="@item.Id ">@item.Nome</option>
+                        }
+                    </InputSelect>
+                </div>
+
+
+                <div class="mb-3">
+                    <label for="imageUri" class="form-label">Nova Imagem:</label>
+                    <input id="imageUri"
+                           type="file"
+                           name="produtos.ImageFile"
+                           class="form-control"
+                           accept=".png, .jpg, .jpeg"
+                           onchange="document.getElementById('imagePreview').src = window.URL.createObjectURL(this.files[0])" />
+                </div>
+
+                <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+                <a href="/produtos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+
+            </EditForm>
+
+            <div class="mt-3">
+                @if (!string.IsNullOrEmpty(MensagemErro))
+                {
+                    <div class="alert alert-danger">@MensagemErro</div>
+                }
+                @if (!string.IsNullOrEmpty(MensagemSucesso))
+                {
+                    <div class="alert alert-success">@MensagemSucesso</div>
+                }
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Produtos? produtos { get; set; }
+
+
+    List<SubCategorias> selSubCategorias = new List<SubCategorias>();
+
+    List<ModoDispo> selModoDispo = new();
+
+    List<Promocoes> selPromocoes = new();
+
+    public static string? modoActual;
+    public static string? subCatActual;
+    public static string? promocaoActual;
+
+    public static string? uriActual;
+    public static byte[]? imgActual { get; set; }
+
+    public static int? modoActualId;
+    public static int? subCatActualId;
+    public static int? promocaoActualId;
+
+    public static int? nVendasActual;
+
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        produtos ??= await context.Produtos.Include("SubCategoria").Include("ModoDispo").Include("Promocoes").FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (produtos is null){
+            NavigationManager.NavigateTo($"/produtos?message=Produto não encontrado.");
+            return;
+        }
+        else if (produtos!.UrlImagem is not null)
+        {
+            uriActual = produtos.UrlImagem;
+
+            if (produtos!.Imagem is not null)
+                imgActual = produtos.Imagem;
+        }
+
+        if (produtos.NVendas < 0 || produtos.NVendas is null)
+            produtos.NVendas = nVendasActual;
+        else
+            nVendasActual = produtos.NVendas;
+
+        if (produtos.SubCategoriaId < 0 || produtos.SubCategoriaId is null)
+            produtos.SubCategoriaId = subCatActualId;
+        else
+            subCatActualId = produtos.SubCategoriaId;
+
+        if (produtos!.SubCategoria is not null)
+            subCatActual = produtos.SubCategoria.Nome;
+
+        // subCatActualId = produtos.SubCategoriaId;
+
+        selSubCategorias = context.SubCategorias
+                        .OrderBy(x => x.Ordem)
+                        .ToList();
+
+
+        if (produtos.ModoDispoId < 0 || produtos.ModoDispoId is null)
+            produtos.ModoDispoId = modoActualId;
+        else
+            modoActualId = produtos.ModoDispoId;
+
+        if (produtos!.ModoDispo is not null)
+            modoActual = produtos.ModoDispo.Nome;
+
+        // modoActualId = produtos.ModoDispoId;
+
+        selModoDispo = context.ModoDispo
+                        .OrderBy(x => x.Nome)
+                        .ToList();
+
+        if (produtos.PromocoesId < 0 || produtos.PromocoesId is null)
+            produtos.PromocoesId = promocaoActualId;
+        else
+            promocaoActualId = produtos.PromocoesId;
+
+        if (produtos!.Promocoes is not null)
+            promocaoActual = produtos.Promocoes.Nome;
+        else
+            promocaoActual = "Sem Promoção";
+
+        // promocaoActualId = produtos.PromocoesId;
+
+        selPromocoes = context.Promocoes
+                        .OrderBy(x => x.Nome)
+                        .ToList();
+
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateProdutos()
+    {
+
+        if (string.IsNullOrWhiteSpace(produtos.Nome)){
+            MensagemErro = "O campo 'Nome' é obrigatório.";
+            return;
+        }
+
+        if (produtos.ModoDispoId == -1 || produtos.SubCategoriaId == -1){
+            MensagemErro = "Escolha uma 'subCategoria' e um 'Modo Entrega'";
+            return;
+        }
+
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(produtos!).State = EntityState.Modified;
+
+        if (await context.Produtos.AnyAsync(c => c.Nome == produtos.Nome && c.Id != produtos.Id))
+        {
+            MensagemErro = "Já existe um produto com esse nome.";
+            return;
+        }
+
+        try
+        {
+            if (produtos.SubCategoriaId == 0)
+                produtos.SubCategoriaId = subCatActualId;
+
+            if(produtos.ModoDispoId == 0)
+                produtos.ModoDispoId = modoActualId;
+
+            if (produtos.PromocoesId <= 0)
+                produtos.PromocoesId = promocaoActualId;
+
+            if (produtos.UrlImagem == null && uriActual != null)
+                produtos.UrlImagem = uriActual;
+
+            if (produtos.Imagem == null && imgActual != null)
+                produtos.Imagem = imgActual;
+
+            if (produtos.ImageFile != null)
+            {
+
+                if (produtos.ImageFile.Length > (200 * 1024))
+                {
+                    MensagemErro = "O tamanho da imagem excede o limite de 200 KB.";
+                    return;
+                }
+
+                if (!isValidFileType(produtos.ImageFile))
+                {
+                    MensagemErro = "Tipo de arquivo inválido. Use .jpg, .jpeg ou .png.";
+                    return;
+                }
+                else
+                    produtos.UrlImagem = produtos.ImageFile.FileName;
+
+                using (var dataStream = new MemoryStream())
+                {
+                    await produtos.ImageFile.CopyToAsync(dataStream);
+                    produtos.Imagem = dataStream.ToArray();
+                }
+
+            }
+
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException){
+            if (!ProdutosExists(produtos!.Id))
+                NavigationManager.NavigateTo("/produtos?message= Erro ao editar produto");
+            else
+                throw;
+        }
+
+        NavigationManager.NavigateTo($"/produtos?message=Produto editado com sucesso.");
+    }
+
+    bool isValidFileType(IFormFile file)
+    {
+        string ext = Path.GetExtension(file.FileName);
+        return ext.ToLower() switch
+        {
+            ".jpg" => true,
+            ".jpeg" => true,
+            ".png" => true,
+            _ => false
+        };
+    }
+
+    private bool ProdutosExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Produtos.Any(e => e.Id == id);
+    }
+}

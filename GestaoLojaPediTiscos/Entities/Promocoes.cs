@@ -14,6 +14,6 @@ public class Promocoes{
 
     public decimal? Desconto { get; set; }
 
-    public bool? Ativa { get; set; }
+    public bool Ativa { get; set; }
 
 }

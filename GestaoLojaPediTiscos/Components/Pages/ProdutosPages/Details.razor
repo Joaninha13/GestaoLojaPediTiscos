@@ -1,0 +1,91 @@
+﻿@page "/produtos/details"
+
+@*@attribute [Authorize(Roles = "Admin,Funcionario")]*@
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Detalhes</PageTitle>
+
+<h1>Detalhes do registo!</h1>
+
+<div>
+    <h2>Produtos</h2>
+    <hr />
+    @if (produtos is null){
+        <p><em>Carregando...</em></p>
+    }
+    else {
+
+        string EstaDisp = "";
+        @if (@produtos.Disponivel){
+            EstaDisp = "Sim";
+        }
+        else{
+            EstaDisp = "Não";
+        }
+
+        <dl class="row">
+
+            <dd>
+                <div>
+                    @if (produtos.Imagem is not null){
+                        <img title="@produtos.UrlImagem" id="imagePreview" class="img-thumbnail  mt-2" src="data:image/*;base64,@(Convert.ToBase64String(produtos.Imagem))" style="width:100px">
+                    }
+                    else{
+                        <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:50%;">
+                    }
+                </div>
+            </dd>
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@produtos.Nome</dd>
+            <dt class="col-sm-2">Descricao</dt>
+            <dd class="col-sm-10">@produtos.Descricao</dd>
+            <dt class="col-sm-2">Preço</dt>
+            <dd class="col-sm-10">@produtos.Preco €/@produtos.ModoDispo.Nome   </dd>
+            <dt class="col-sm-2">Stock</dt>
+            <dd class="col-sm-10">@produtos.Stock</dd>
+            <dt class="col-sm-2">Vendas</dt>
+            <dd class="col-sm-10">@produtos.NVendas</dd>
+            <dt class="col-sm-2">Disponivel</dt>
+            <dd class="col-sm-10">@EstaDisp</dd>
+            <dt class="col-sm-2">SubCategoria</dt>
+            <dd class="col-sm-10">@produtos.SubCategoria.Nome</dd>
+            <dt class="col-sm-2">Modo Distribuição</dt>
+            <dd class="col-sm-10">@produtos.ModoDispo.Nome</dd>
+            <dt class="col-sm-2">Promoção</dt>
+            <dd class="col-sm-10">
+                @if (produtos.Promocoes != null){
+                    @produtos.Promocoes.Nome;
+                }
+                else{
+                    <p>Sem Promoção</p>
+                }
+            </dd>
+        </dl>
+        <div>
+            <a href="@($"/produtos/edit?id={produtos.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+            <a href="/produtos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </div>
+    }
+</div>
+
+@code {
+    private Produtos? produtos;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        produtos = await context.Produtos.Include("SubCategoria").Include("ModoDispo").Include("Promocoes").FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (produtos is null)
+            NavigationManager.NavigateTo("/produtos");
+        
+    }
+}

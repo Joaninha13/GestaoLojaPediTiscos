@@ -1,0 +1,77 @@
+﻿@page "/mododispos/create"
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Criar</PageTitle>
+
+<h1>Criar novo registo</h1>
+
+<h4>Modo de Disponibilização</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="ModoDispo" OnValidSubmit="AddModoDispo" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert"/>
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome:</label> 
+                <InputText id="nome" @bind-Value="ModoDispo.Nome" class="form-control" /> 
+                <ValidationMessage For="() => ModoDispo.Nome" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="descricao" class="form-label">Descricao:</label> 
+                <InputText id="descricao" @bind-Value="ModoDispo.Descricao" class="form-control" /> 
+                <ValidationMessage For="() => ModoDispo.Descricao" class="text-danger" /> 
+            </div>
+            <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+            <a href="/mododispos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+
+        </EditForm>
+
+        <div class="mt-3">
+            @if (!string.IsNullOrEmpty(MensagemErro))
+            {
+                <div class="alert alert-danger">@MensagemErro</div>
+            }
+            @if (!string.IsNullOrEmpty(MensagemSucesso))
+            {
+                <div class="alert alert-success">@MensagemSucesso</div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private ModoDispo ModoDispo { get; set; } = new();
+
+
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddModoDispo()
+    {
+        if (string.IsNullOrWhiteSpace(ModoDispo.Nome) || string.IsNullOrWhiteSpace(ModoDispo.Descricao)){
+            MensagemErro = "Os campos 'Nome' e 'Descriçao' são obrigatórios.";
+            return;
+        }
+
+        using var context = DbFactory.CreateDbContext();
+
+        if (await context.ModoDispo.AnyAsync(c => c.Nome == ModoDispo.Nome && c.Id != ModoDispo.Id)){
+            MensagemErro = "Já existe um Modo de destribuição com este nome.";
+            return;
+        }
+
+        context.ModoDispo.Add(ModoDispo);
+        await context.SaveChangesAsync();
+
+        MensagemSucesso = "Modo de destribuição adicionado com sucesso!";
+        if (!string.IsNullOrEmpty(MensagemSucesso))
+            ModoDispo = new ModoDispo(); // Limpa os campos
+    }
+}

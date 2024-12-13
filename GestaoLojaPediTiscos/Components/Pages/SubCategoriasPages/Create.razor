@@ -1,0 +1,164 @@
+﻿@page "/subcategorias/create"
+
+@* @attribute [Authorize(Roles = "Admin, Funcionario")] *@
+
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Criar</PageTitle>
+
+<h1>Criar registo!</h1>
+
+<h2>SubCategorias</h2>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="subcategorias" OnValidSubmit="AddSubCategorias" enctype="multipart/form-data" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert"/>
+
+            <div class="mb-3">
+
+                <div>
+                    @if (subcategorias.Imagem != null && @subcategorias.Imagem.Length > 0){
+                        <img title="@subcategorias.Nome" id="imagePreview" class="img-thumbnail  mt-2" src="@subcategorias.Imagem" style="width:100px;">
+                    }
+                    else{
+                        <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:100px;">
+                    }
+                </div>
+
+                <label for="nome" class="form-label">Nome:</label> 
+                <InputText id="nome" @bind-Value="subcategorias.Nome" class="form-control" />
+                <ValidationMessage For="() => subcategorias.Nome" class="text-danger" />
+            </div> 
+            
+            <div class="mb-3">
+                <label for="ordem" class="form-label">Ordem:</label> 
+                <InputNumber id="ordem" @bind-Value="subcategorias.Ordem" class="form-control" />
+                <ValidationMessage For="() => subcategorias.Ordem" class="text-danger" />
+            </div> 
+            
+            <div class="mb-3">
+                <label for="categoriaid" class="form-label">Categoria:</label>
+                <InputSelect id="ListaCategorias" class="form-group" @bind-Value="@subcategorias.CategoriaId">
+                    <option value="-1">Categoria</option>
+                    @foreach (var item in selCategorias){
+                        <option value="@item.Id ">@item.Nome</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label for="urlimagem" class="form-label">Imagem:</label>
+                <input id="urlimagem"
+                       type="file"
+                       name="subcategorias.ImageFile"
+                       class="form-control"
+                       accept=".png, .jpg, .jpeg"
+                       onchange="document.getElementById('imagePreview').src = window.URL.createObjectURL(this.files[0])" />
+            </div>
+
+            <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+            <a href="/subcategorias" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </EditForm>
+
+        <div class="mt-3">
+            @if (!string.IsNullOrEmpty(MensagemErro)){
+                <div class="alert alert-danger">@MensagemErro</div>
+            }
+            @if (!string.IsNullOrEmpty(MensagemSucesso)){
+                <div class="alert alert-success">@MensagemSucesso</div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private SubCategorias subcategorias { get; set; } = new();
+
+    List<Categorias> selCategorias = new();
+
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync(){
+        using var context = DbFactory.CreateDbContext();
+
+        selCategorias = context.Categorias
+                        .OrderBy(X => X.Ordem)
+                        .ToList();
+
+    }
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddSubCategorias()
+    {
+
+        if (string.IsNullOrWhiteSpace(subcategorias.Nome) || subcategorias.CategoriaId == -1){
+            MensagemErro = "Os campos 'Nome' e 'Categorias' são obrigatórios.";
+            return;
+        }
+
+        using var context = DbFactory.CreateDbContext();
+
+        if (await context.SubCategorias.AnyAsync(c => c.Nome == subcategorias.Nome || c.Id == subcategorias.Id)){
+            MensagemErro = "Já existe uma SubCategoria com este nome.";
+            return;
+        }
+
+        try
+        {
+            if (subcategorias.ImageFile != null)
+            {
+                if (subcategorias.ImageFile.Length > (200 * 1024))
+                {
+                    MensagemErro = "O tamanho da imagem excede o limite de 200 KB.";
+                    return;
+                }
+
+                if (!isValidFileType(subcategorias.ImageFile))
+                {
+                    MensagemErro = "Tipo de arquivo inválido. Use .jpg, .jpeg ou .png.";
+                    return;
+                }
+                else
+                    subcategorias.UrlImagem = subcategorias.ImageFile.FileName;
+
+                using (var dataStream = new MemoryStream())
+                {
+                    await subcategorias.ImageFile.CopyToAsync(dataStream);
+                    subcategorias.Imagem = dataStream.ToArray();
+                }
+            }
+
+            context.SubCategorias.Add(subcategorias);
+            await context.SaveChangesAsync();
+
+            MensagemSucesso = "SubCategoria adicionada com sucesso!";
+            if (!string.IsNullOrEmpty(MensagemSucesso))
+                subcategorias = new SubCategorias(); // Limpa os campos
+        }
+        catch (Exception ex)
+        {
+            MensagemErro = $"Erro ao adicionar SubCategoria: {ex.Message}";
+            return;
+        }
+    }
+
+    bool isValidFileType(IFormFile file)
+    {
+        string ext = Path.GetExtension(file.FileName);
+        return ext.ToLower() switch
+        {
+            ".jpg" => true,
+            ".jpeg" => true,
+            ".png" => true,
+            _ => false
+        };
+    }
+}

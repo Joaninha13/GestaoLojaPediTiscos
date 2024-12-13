@@ -11,6 +11,6 @@ public class Pagamentos{
 
     public decimal? Valor { get; set; }
 
-    public string? Estado { get; set; } //Pendente, Concluido, Falhou 
+    public string? Estado { get; set; } //Pendente, Pago, Rejeitado 
 
 }
