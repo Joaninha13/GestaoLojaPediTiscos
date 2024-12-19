@@ -15,9 +15,9 @@
 @inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>SubCategoria</PageTitle>
+<PageTitle>Index</PageTitle>
 
-<h1>Listagem de SubCategorias</h1>
+<h1>Listagem de Produtos</h1>
 
 @* Para Mensagens *@
 @{
@@ -29,13 +29,8 @@
 }
 
 <p>
-    <a title="Nova categoria!" href="produtos/create"><img src="/img/novo.png" style="height:50px" /></a>
+    <a title="Novo Produto!" href="produtos/create"><img src="/img/novo.png" style="height:50px" /></a>
 </p>
-
-    @* 
-    <PropertyColumn Property="produtos => produtos.ModoDispoId" />
-    <PropertyColumn Property="produtos => produtos.PromocoesId" />
-    *@
 
 <QuickGrid Class="table" Items="@produtosQueryable" @ref="refgrid" Pagination="@pagination">
         <TemplateColumn Context="produtos">

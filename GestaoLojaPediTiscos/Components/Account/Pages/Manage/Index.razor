@@ -16,7 +16,7 @@
 
 <div class="row">
     <div class="col-md-6">
-        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
+@*         <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating mb-3">
@@ -29,11 +29,45 @@
                 <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
+        </EditForm> *@
+        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="form-floating mb-3">
+                <input type="text" value="@username" class="form-control" placeholder="Please choose your username." disabled />
+                <label for="username" class="form-label">Username</label>
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Please enter your phone number." />
+                <label for="phone-number" class="form-label">Phone number</label>
+                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Nome" class="form-control" placeholder="Please enter your name." />
+                <label for="nome" class="form-label">Name</label>
+                <ValidationMessage For="() => Input.Nome" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputNumber @bind-Value="Input.NIF" class="form-control" placeholder="Please enter your NIF." />
+                <label for="nif" class="form-label">NIF</label>
+                <ValidationMessage For="() => Input.NIF" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Morada" class="form-control" placeholder="Please enter your address." />
+                <label for="morada" class="form-label">Address</label>
+                <ValidationMessage For="() => Input.Morada" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Codigo_Postal" class="form-control" placeholder="Please enter your postal code." />
+                <label for="codigo-postal" class="form-label">Postal Code</label>
+                <ValidationMessage For="() => Input.Codigo_Postal" class="text-danger" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
         </EditForm>
     </div>
 </div>
 
-@code {
+@* @code {
     private ApplicationUser user = default!;
     private string? username;
     private string? phoneNumber;
@@ -73,5 +107,85 @@
         [Phone]
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
+    }
+}
+ *@
+ @code {
+    private ApplicationUser user = default!;
+    private string? username;
+    private string? phoneNumber;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        username = await UserManager.GetUserNameAsync(user);
+        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        Input.PhoneNumber ??= phoneNumber;
+        Input.Nome ??= user.Nome;
+        Input.NIF ??= user.NIF;
+        Input.Morada ??= user.Morada;
+        Input.Codigo_Postal ??= user.Codigo_Postal;
+    }
+
+    private async Task OnValidSubmitAsync(){
+        bool hasChanges = false;
+
+        if (Input.PhoneNumber != phoneNumber)
+        {
+            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
+            if (!setPhoneResult.Succeeded)
+            {
+                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
+                return;
+            }
+            hasChanges = true;
+        }
+
+        if (Input.Nome != user.Nome || 
+            Input.NIF != user.NIF || 
+            Input.Morada != user.Morada || 
+            Input.Codigo_Postal != user.Codigo_Postal)
+        {
+            user.Nome = Input.Nome;
+            user.NIF = Input.NIF;
+            user.Morada = Input.Morada;
+            user.Codigo_Postal = Input.Codigo_Postal;
+            await UserManager.UpdateAsync(user);
+            hasChanges = true;
+        }
+
+        if (hasChanges)
+        {
+            await SignInManager.RefreshSignInAsync(user);
+            RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Phone]
+        [Display(Name = "Phone number")]
+        public string? PhoneNumber { get; set; }
+
+        [Required]
+        [Display(Name = "Name")]
+        public string? Nome { get; set; }
+
+        [Required]
+        [Range(100000000, 999999999, ErrorMessage = "NIF must have 9 digits.")]
+        public long? NIF { get; set; }
+
+        [Display(Name = "Address")]
+        public string? Morada { get; set; }
+
+        [Display(Name = "Postal Code")]
+        public string? Codigo_Postal { get; set; }
     }
 }

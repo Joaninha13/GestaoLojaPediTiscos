@@ -21,8 +21,10 @@
     <PropertyColumn Property="pagamentos => pagamentos.Estado" />
 
     <TemplateColumn Context="pagamentos">
-        <button class="btn btn-success btn-sm" @onclick="() => AceitarPagamento(pagamentos.Id)"><img title="Aceitar" src="/img/AceitarIcon.png" style="height:30px" /></button>
-        <button class="btn btn-danger btn-sm" @onclick="() => RejeitarPagamento(pagamentos.Id)"><img title="Rejeitar" src="/img/RejeitarIcon.png" style="height:30px" /></button>
+        @if (pagamentos.Estado == "Pendente"){
+            <button class="btn btn-success btn-sm" @onclick="() => AceitarPagamento(pagamentos.Id)"><img title="Aceitar" src="/img/AceitarIcon.png" style="height:30px" /></button>
+            <button class="btn btn-danger btn-sm" @onclick="() => RejeitarPagamento(pagamentos.Id)"><img title="Rejeitar" src="/img/RejeitarIcon.png" style="height:30px" /></button> 
+            }
     </TemplateColumn>
 </QuickGrid>
 

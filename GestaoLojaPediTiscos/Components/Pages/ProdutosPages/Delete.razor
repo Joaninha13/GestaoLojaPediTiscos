@@ -10,11 +10,9 @@
 
 <PageTitle>Apagar</PageTitle>
 
-<h1>Apagar Registo</h1>
+<h1>Apagar Produto</h1>
 
-<h3>Tem a certeza de que quer apagar este registo?</h3>
 <div>
-    <h2>Produtos</h2>
     <hr />
     @if (produtos is null){
         <p><em>Carregando...</em></p>
@@ -92,7 +90,7 @@
         produtos = await context.Produtos.Include("SubCategoria").Include("ModoDispo").Include("Promocoes").FirstOrDefaultAsync(m => m.Id == Id);
 
         if (produtos is null)
-            NavigationManager.NavigateTo("/produtos");
+            NavigationManager.NavigateTo("/produtos?message=Erro: Produto nao encontrado");
 
     }
 
@@ -101,7 +99,6 @@
         using var context = DbFactory.CreateDbContext();
 
         if (produtos.NVendas > 0){
-            // Exibe uma mensagem ao usuário e não apaga
             NavigationManager.NavigateTo($"/produtos?message=Erro: Não é possível apagar o produto porque há vendas associadas a esse produto");
             return;
         }

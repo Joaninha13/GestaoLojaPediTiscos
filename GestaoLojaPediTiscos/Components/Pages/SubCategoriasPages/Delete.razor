@@ -10,10 +10,9 @@
 
 <PageTitle>Apagar</PageTitle>
 
-<h1>Apagar registo</h1>
+<h1>Apagar SubCategoria</h1>
 
 <div>
-    <h2>SubCategorias </h2>
     <hr />
     @if (subcategorias is null){
         <p><em>Carregando...</em></p>
@@ -63,7 +62,7 @@
         subcategorias = await context.SubCategorias.Include("Categoria").FirstOrDefaultAsync(m => m.Id == Id);
 
         if (subcategorias is null)
-            NavigationManager.NavigateTo("/subcategorias");
+            NavigationManager.NavigateTo("/subcategorias?message=Erro: SubCategoria nao encontrada");
         
     }
 

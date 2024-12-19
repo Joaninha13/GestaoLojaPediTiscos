@@ -6,9 +6,8 @@ namespace GestaoLojaPediTiscos.Data;
 public class ApplicationUser : IdentityUser{
 
     public string? Nome { get; set; }
-    public long NIF { get; set; }
+    public long? NIF { get; set; }
     public string? Morada { get; set; }
     public string? Codigo_Postal { get; set; }
-    public Byte[]? Foto { get; set; }
 
 }

@@ -20,8 +20,14 @@
     }
     else {
         <div>
-            <button class="btn btn-success" @onclick="ConfirmarVenda"><img title="Aceitar" src="/img/AceitarIcon.png" style="height:30px" /></button>
-            <button class="btn btn-danger" @onclick="RejeitarVenda"><img title="Recusar" src="/img/RejeitarIcon.png" style="height:30px" /></button>
+            @if (encomendas?.Estado == "Concluído"){
+                <button class="btn btn-success" @onclick="ConfirmarVenda">
+                    <img title="Aceitar" src="/img/AceitarIcon.png" style="height:30px" />
+                </button>
+                <button class="btn btn-danger" @onclick="RejeitarVenda">
+                    <img title="Recusar" src="/img/RejeitarIcon.png" style="height:30px" />
+                </button>
+            }  
             <button class="btn btn-primary" @onclick="ExpedirEncomenda"><img title="Recusar" src="/img/EnviarIcon.png" style="height:30px" /></button>
         </div>
 
@@ -36,7 +42,7 @@
             <dd class="col-sm-10">@encomendas.Total</dd>
         </dl>
         <div>
-            <a href="/mododispos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+            <a href="/encomendas" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
         </div>
     }
 </div>
@@ -61,6 +67,17 @@
             using var context = DbFactory.CreateDbContext();
             encomendas.Estado = "Confirmado";
             context.Encomendas.Update(encomendas);
+
+            
+            // Atualizar Numero de Vendas
+            var itens = await context.ItensEncomendados.Where(i => i.EncomendaId == encomendas.Id).ToListAsync();
+
+            foreach(var item in itens){
+                var produto = await context.Produtos.FirstOrDefaultAsync(p => p.Id == item.ProdutoId);
+                produto.NVendas += item.Quantidade;
+                context.Produtos.Update(produto);
+            }
+
             await context.SaveChangesAsync();
             NavigationManager.NavigateTo($"/encomendas?message=Encomenda Confirmada com sucesso.");
         }
@@ -71,6 +88,17 @@
             using var context = DbFactory.CreateDbContext();
             encomendas.Estado = "Rejeitado";
             context.Encomendas.Update(encomendas);
+
+
+            //Atualizar Numero de Stock
+            var itens = await context.ItensEncomendados.Where(i => i.EncomendaId == encomendas.Id).ToListAsync();
+
+            foreach (var item in itens){
+                var produto = await context.Produtos.FirstOrDefaultAsync(p => p.Id == item.ProdutoId);
+                produto.Stock += item.Quantidade;
+                context.Produtos.Update(produto);
+            }
+
             await context.SaveChangesAsync();
             NavigationManager.NavigateTo($"/encomendas?message=Encomenda Rejeitada com sucesso.");
         }
