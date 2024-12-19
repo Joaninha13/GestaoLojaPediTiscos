@@ -1,0 +1,190 @@
+﻿@page "/users"
+
+@* @attribute [Authorize(Roles = "Admin, Funcionario")] *@
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Identity
+@using GestaoLojaPediTiscos.Data
+
+@rendermode InteractiveServer
+
+@implements IAsyncDisposable
+
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Utilizadores</PageTitle>
+
+<h1>Listagem de Utilizadores</h1>
+
+@if (usuarios == null || !usuarios.Any())
+{
+    <p><em>Carregando usuários...</em></p>
+}
+else
+{
+    <QuickGrid Class="table" Items="@usuarios">
+        <PropertyColumn Property="u => u.Nome" Title="Nome" />
+        <PropertyColumn Property="u => u.Email" Title="Email" />
+        <TemplateColumn Context="u" Title="Role">
+            @foreach (var role in u.Roles){
+                <p>@role</p>
+            }
+        </TemplateColumn>
+        <PropertyColumn Property="@(u => u.EmailConfirmed ? "Ativo" : "Inativo")" Title="Estado" />
+        <TemplateColumn Context="u">
+            @if (@u.Id != userLog.Id && !u.Roles.Contains("Admin")){
+                <button class="btn btn-primary" @onclick="() => AlterarEstado(u.Id)">
+                    Alterar Estado
+                </button>
+            }
+            @if (@u.Id != userLog.Id){
+                @if (u.Roles.Contains("Cliente")){
+                    <button class="btn btn-warning" @onclick='() => GerirPerfil(u.Id, "Funcionario")'>Tornar Funcionário</button>
+                }
+                else if (u.Roles.Contains("Funcionario")){
+                    <button class="btn btn-warning" @onclick='() => GerirPerfil(u.Id, "Cliente")'>Tornar Cliente</button>
+                }
+            }
+        </TemplateColumn>
+    </QuickGrid>
+
+    <div class="mt-3">
+        @if (!string.IsNullOrEmpty(MensagemErro))
+        {
+            <div class="alert alert-danger">@MensagemErro</div>
+        }
+        @if (!string.IsNullOrEmpty(MensagemSucesso))
+        {
+            <div class="alert alert-success">@MensagemSucesso</div>
+        }
+    </div>
+
+}
+
+@code {
+    private ApplicationDbContext context = default!;
+    private IQueryable<UserWithRoles> usuarios = new List<UserWithRoles>().AsQueryable();
+
+    private ApplicationUser userLog = default!;
+
+
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync(){
+        context = DbFactory.CreateDbContext();
+        var users = await UserManager.Users.ToListAsync();
+
+        userLog = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext?.User);
+
+        await CarregarUsuarios();
+    }
+
+    private async Task CarregarUsuarios(){
+        var users = await UserManager.Users.ToListAsync();
+        var userList = new List<UserWithRoles>();
+
+        foreach (var user in users)
+        {
+            var roles = await UserManager.GetRolesAsync(user);
+            userList.Add(new UserWithRoles
+                {
+                    Id = user.Id,
+                    Nome = user.Nome,
+                    Email = user.Email,
+                    EmailConfirmed = user.EmailConfirmed,
+                    Roles = roles.ToList()
+                });
+        }
+
+        usuarios = userList.AsQueryable();
+        StateHasChanged();
+    }
+
+    private async Task AlterarEstado(string userId)
+    {
+        if (!await PodeAlterarEstadoOuGerirPerfil(userId)){
+            MensagemErro = "Você não tem permissão para alterar o estado deste usuário.";
+            return;
+        }
+
+        if (userId != userLog.Id){
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user != null){
+                user.EmailConfirmed = !user.EmailConfirmed;
+                await UserManager.UpdateAsync(user);
+
+                MensagemSucesso = "Estado do utilizador alterado com sucesso";
+
+                await CarregarUsuarios();
+            }
+            else
+                MensagemErro = "Utilizador não encontrado";
+            
+        }
+    }
+
+    private async Task GerirPerfil(string userId, string role)
+    {
+        if (!await PodeAlterarEstadoOuGerirPerfil(userId)){
+            MensagemErro = "Você não tem permissão para alterar o perfil deste usuário.";
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(userId);
+
+        try{
+            if (user != null){
+                var auxRoles = await UserManager.GetRolesAsync(user);
+
+                foreach (var r in auxRoles)
+                    await UserManager.RemoveFromRoleAsync(user, r);
+
+                await UserManager.AddToRoleAsync(user, role);
+
+                MensagemSucesso = "Perfil do utilizador alterado com sucesso";
+
+                await CarregarUsuarios();
+            }
+        }
+        catch (Exception ex){
+            MensagemErro = "Erro ao alterar perfil do utilizador";
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task<bool> PodeAlterarEstadoOuGerirPerfil(string userId){
+        var rolesLogado = await UserManager.GetRolesAsync(userLog);
+
+        var userAlvo = await UserManager.FindByIdAsync(userId);
+        if (userAlvo == null) 
+            return false;
+
+        var rolesAlvo = await UserManager.GetRolesAsync(userAlvo);
+
+        if (rolesLogado.Contains("Admin")) 
+            return true;
+
+        if (rolesLogado.Contains("Funcionario") && rolesAlvo.Contains("Cliente"))
+            return true;
+
+        return false;
+    }
+
+    private class UserWithRoles{
+        public string Id { get; set; } = string.Empty;
+        public string Nome { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public bool EmailConfirmed { get; set; } = false;
+        public List<string> Roles { get; set; } = new();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

@@ -79,6 +79,12 @@
             identityErrors = result.Errors;
             return;
         }
+        //user.Ativo = true;
+        var roleResult = await UserManager.AddToRoleAsync(user, "Cliente");
+        if (!roleResult.Succeeded){
+            identityErrors = roleResult.Errors;
+            return;
+        }
 
         Logger.LogInformation("User created a new account with password.");
 
