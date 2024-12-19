@@ -1,10 +1,15 @@
 ﻿@implements IDisposable
 
+@using Microsoft.AspNetCore.Identity
+@using GestaoLojaPediTiscos.Data
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
 @inject NavigationManager NavigationManager
 
-<div class="top-row ps-3 navbar navbar-dark">
+<div class="top-row ps-3">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">GestaoLojaPediTiscos</a>
+        <a class="logo-span" href="/">@AppConfig.tituloHomePage</a>
     </div>
 </div>
 
@@ -12,9 +17,10 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
+
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            <NavLink class="nav-link" href="/produtos">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Produtos
             </NavLink>
         </div>
 
@@ -41,53 +47,26 @@
                 <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Promocoes
             </NavLink>
         </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/produtos">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Produtos
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/encomendas">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Encomendas
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/users">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> users
-            </NavLink>
-        </div>
-
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                    <NavLink class="nav-link" href="/encomendas">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Gerir Encomendas
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <form action="Account/Logout" method="post">
-                        <AntiforgeryToken />
-                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-                        </button>
-                    </form>
+                    <NavLink class="nav-link" href="/pagamentos">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Gerir Pagamentos
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/users">
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Gerir Utilizadores
+                    </NavLink>
                 </div>
             </Authorized>
             <NotAuthorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
-                    </NavLink>
-                </div>
+
             </NotAuthorized>
         </AuthorizeView>
     </nav>

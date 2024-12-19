@@ -1,4 +1,8 @@
 ﻿@page "/promocoes"
+
+@attribute [Authorize(Roles = "Admin, Funcionario")]
+
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using GestaoLojaPediTiscos.Entities

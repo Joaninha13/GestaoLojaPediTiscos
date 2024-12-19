@@ -1,6 +1,8 @@
 ﻿@page "/promocoes/create"
 
+@attribute [Authorize(Roles = "Admin, Funcionario")]
 
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using GestaoLojaPediTiscos.Entities
 @inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory

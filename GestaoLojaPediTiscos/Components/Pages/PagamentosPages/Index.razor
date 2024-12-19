@@ -1,4 +1,8 @@
 ﻿@page "/pagamentos"
+
+@attribute [Authorize(Roles = "Admin, Funcionario")]
+
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using GestaoLojaPediTiscos.Entities
@@ -6,13 +10,9 @@
 @implements IAsyncDisposable
 @inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Pagamentos</PageTitle>
 
-<h1>Index</h1>
-
-<p>
-    <a href="pagamentos/create">Create New</a>
-</p>
+<h1>Listagem de Pagamentos</h1>
 
 <QuickGrid Class="table" Items="context.Pagamentos">
     <PropertyColumn Property="pagamentos => pagamentos.EncomendaId" />
