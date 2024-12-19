@@ -1,0 +1,74 @@
+﻿@page "/promocoes/delete"
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Apagar</PageTitle>
+
+<h1>Apagar registo</h1>
+
+<p>Are you sure you want to delete this?</p>
+<div>
+    <h2>Promocoes</h2>
+    <hr />
+    @if (promocoes is null)
+    {
+        <p><em>Carregando...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@promocoes.Nome</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Descricao</dt>
+            <dd class="col-sm-10">@promocoes.Descricao</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">DataInicio</dt>
+            <dd class="col-sm-10">@promocoes.DataInicio</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">DataFim</dt>
+            <dd class="col-sm-10">@promocoes.DataFim</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Desconto</dt>
+            <dd class="col-sm-10">@promocoes.Desconto</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Ativa</dt>
+            <dd class="col-sm-10">@promocoes.Ativa</dd>
+        </dl>
+        <EditForm method="post" Model="promocoes" OnValidSubmit="DeletePromocoes" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(promocoes is null)" onclick="return confirm('Tem a certeza que deseja apagar este registo?')"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></button> |
+            <a href="/promocoes" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private Promocoes? promocoes;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        promocoes = await context.Promocoes.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (promocoes is null)
+            NavigationManager.NavigateTo("/promocoes?message=Promoção nao encontrada");
+        
+    }
+
+    private async Task DeletePromocoes()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Promocoes.Remove(promocoes!);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/promocoes?message=Promoção apagada com sucesso");
+    }
+}

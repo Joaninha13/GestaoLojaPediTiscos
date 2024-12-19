@@ -1,0 +1,63 @@
+﻿@page "/promocoes/details"
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Detalhes</PageTitle>
+
+<h1>Detalhes do registo</h1>
+
+<div>
+    <h2>Promocoes</h2>
+    <hr />
+    @if (promocoes is null){
+        <p><em>Carregar...</em></p>
+    }
+    else {
+
+        string Activa = "";
+        @if (promocoes.Ativa){
+            Activa = "Activa";
+        }
+        else{
+            Activa = "Não Activa";
+        }
+
+        <dl class="row">
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@promocoes.Nome</dd>
+            <dt class="col-sm-2">Descricao</dt>
+            <dd class="col-sm-10">@promocoes.Descricao</dd>
+            <dt class="col-sm-2">DataInicio</dt>
+            <dd class="col-sm-10">@promocoes.DataInicio</dd>
+            <dt class="col-sm-2">DataFim</dt>
+            <dd class="col-sm-10">@promocoes.DataFim</dd>
+            <dt class="col-sm-2">Desconto</dt>
+            <dd class="col-sm-10">@promocoes.Desconto %</dd>
+            <dt class="col-sm-2">Ativa</dt>
+            <dd class="col-sm-10">@Activa</dd>
+        </dl>
+        <div>
+            <a href="@($"/promocoes/edit?id={promocoes.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+            <a href="/promocoes" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </div>
+    }
+</div>
+
+@code {
+    private Promocoes? promocoes;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        promocoes = await context.Promocoes.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (promocoes is null)
+            NavigationManager.NavigateTo("/promocoes?message=Promoção nao encontrada");
+    }
+}

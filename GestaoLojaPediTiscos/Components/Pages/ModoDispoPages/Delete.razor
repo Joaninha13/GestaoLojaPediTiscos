@@ -42,7 +42,7 @@
         mododispo = await context.ModoDispo.FirstOrDefaultAsync(m => m.Id == Id);
 
         if (mododispo is null)
-            NavigationManager.NavigateTo("/mododispos");
+            NavigationManager.NavigateTo("/mododispos?message=Modo distribuição nao encontrado");
     }
 
     private async Task DeleteModoDispo()

@@ -1,0 +1,119 @@
+﻿@page "/promocoes/create"
+
+
+@using Microsoft.EntityFrameworkCore
+@using GestaoLojaPediTiscos.Entities
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Criar</PageTitle>
+
+<h1>Criar novo registo</h1>
+
+<h4>Promoções</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="promocoes" OnValidSubmit="AddPromocoes" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert"/>
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome:</label> 
+                <InputText id="nome" @bind-Value="promocoes.Nome" class="form-control" />
+                <ValidationMessage For="() => promocoes.Nome" class="text-danger" />
+            </div>        
+            <div class="mb-3">
+                <label for="descricao" class="form-label">Descricao:</label> 
+                <InputText id="descricao" @bind-Value="promocoes.Descricao" class="form-control" />
+                <ValidationMessage For="() => promocoes.Descricao" class="text-danger" />
+            </div>        
+            <div class="mb-3">
+                <label for="datainicio" class="form-label">DataInicio:</label> 
+                <InputDate id="datainicio" @bind-Value="promocoes.DataInicio" class="form-control" />
+                <ValidationMessage For="() => promocoes.DataInicio" class="text-danger" />
+            </div>        
+            <div class="mb-3">
+                <label for="datafim" class="form-label">DataFim:</label> 
+                <InputDate id="datafim" @bind-Value="promocoes.DataFim" class="form-control" />
+                <ValidationMessage For="() => promocoes.DataFim" class="text-danger" />
+            </div>        
+            <div class="mb-3">
+                <label for="desconto" class="form-label">Desconto:</label> 
+                <InputNumber id="desconto" @bind-Value="promocoes.Desconto" class="form-control" />
+                <ValidationMessage For="() => promocoes.Desconto" class="text-danger" />
+            </div>        
+            <div class="mb-3">
+                <label for="ativa" class="form-label">Ativa:</label> 
+                <InputCheckbox id="ativa" @bind-Value="promocoes.Ativa" class="form-check-input" />
+                <ValidationMessage For="() => promocoes.Ativa" class="text-danger" />
+            </div>        
+            <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+            <a href="/promocoes" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+
+        </EditForm>
+    </div>
+</div>
+
+<div class="mt-3">
+    @if (!string.IsNullOrEmpty(MensagemErro))
+    {
+        <div class="alert alert-danger">@MensagemErro</div>
+    }
+    @if (!string.IsNullOrEmpty(MensagemSucesso))
+    {
+        <div class="alert alert-success">@MensagemSucesso</div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Promocoes promocoes { get; set; } = new();
+
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
+
+    protected override void OnInitialized(){
+
+        // Define as datas iniciais com a data atual
+        promocoes.DataInicio = DateTime.Now;
+        promocoes.DataFim = DateTime.Now;
+    }
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddPromocoes()
+    {
+        if (string.IsNullOrWhiteSpace(promocoes.Nome) || string.IsNullOrWhiteSpace(promocoes.Descricao)){
+            MensagemErro = "Os campos 'Nome' e 'Descriçao' são obrigatórios.";
+            return;
+        }
+
+        using var context = DbFactory.CreateDbContext();
+
+        if (await context.Promocoes.AnyAsync(c => c.Nome == promocoes.Nome && c.Id != promocoes.Id)){
+            MensagemErro = "Já existe uma promoção com esse nome.";
+            return;
+        }
+
+        if(promocoes.DataInicio > promocoes.DataFim){
+            MensagemErro = "A data de inicio não pode ser superior à data de fim.";
+            return;
+        }
+
+        if(promocoes.Desconto <= 0 || promocoes.Desconto > 100){
+            MensagemErro = "O desconto tem de ser um valor entre 1 e 100.";
+            return;
+        }
+
+        if(promocoes.DataInicio <= DateTime.Now){
+            MensagemErro = "A data de inicio tem de ser superior ou igual à data atual.";
+            return;
+        }
+
+        context.Promocoes.Add(promocoes);
+        await context.SaveChangesAsync();
+
+        MensagemSucesso = "Promoção adicionada com sucesso!";
+        if (!string.IsNullOrEmpty(MensagemSucesso))
+            promocoes = new Promocoes(); // Limpa os campos
+    }
+}

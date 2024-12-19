@@ -79,7 +79,7 @@
             identityErrors = result.Errors;
             return;
         }
-        //user.Ativo = true;
+
         var roleResult = await UserManager.AddToRoleAsync(user, "Cliente");
         if (!roleResult.Succeeded){
             identityErrors = roleResult.Errors;

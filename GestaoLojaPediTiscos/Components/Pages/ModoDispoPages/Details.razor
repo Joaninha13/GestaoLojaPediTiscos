@@ -25,7 +25,6 @@
         <div>
             <a href="@($"/mododispos/edit?id={mododispo.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
             <a href="/mododispos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
-
         </div>
     }
 </div>
@@ -36,14 +35,12 @@
     [SupplyParameterFromQuery]
     private int Id { get; set; }
 
-    protected override async Task OnInitializedAsync()
-    {
+    protected override async Task OnInitializedAsync(){
         using var context = DbFactory.CreateDbContext();
         mododispo = await context.ModoDispo.FirstOrDefaultAsync(m => m.Id == Id);
 
         if (mododispo is null)
-        {
-            NavigationManager.NavigateTo("notfound");
-        }
+            NavigationManager.NavigateTo("/mododispos?message=Modo distribuição nao encontrado");
+
     }
 }

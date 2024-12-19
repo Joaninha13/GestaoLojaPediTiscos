@@ -1,0 +1,49 @@
+﻿@page "/promocoes"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using GestaoLojaPediTiscos.Entities
+@using GestaoLojaPediTiscos.Data
+@implements IAsyncDisposable
+@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+
+@inject NavigationManager NavigationManager
+
+<PageTitle>Index</PageTitle>
+
+<h1>Listagem de Promoções</h1>
+
+@* Para Mensagens *@
+@{
+    var query = new Uri(NavigationManager.Uri).Query;
+    var message = System.Web.HttpUtility.ParseQueryString(query).Get("message");
+    if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert alert-success">@message</div>
+    }
+}
+
+<QuickGrid Class="table" Items="context.Promocoes">
+    <PropertyColumn Property="promocoes => promocoes.Nome" />
+    <PropertyColumn Property="promocoes => promocoes.Descricao" />
+    <PropertyColumn Property="promocoes => promocoes.DataInicio" />
+    <PropertyColumn Property="promocoes => promocoes.DataFim" />
+    <PropertyColumn Property="promocoes => promocoes.Desconto" />
+    <PropertyColumn Property="promocoes => promocoes.Ativa" />
+
+    <TemplateColumn Context="promocoes">
+        <a title="Editar" href="@($"promocoes/edit?id={promocoes.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+        <a title="Detalhes" href="@($"promocoes/details?id={promocoes.Id}")"><img title="Detalhes" src="/img/detailsicon.png" style="height:30px" /></a> |
+        <a title="Apagar" href="@($"promocoes/delete?id={promocoes.Id}")"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private ApplicationDbContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}
