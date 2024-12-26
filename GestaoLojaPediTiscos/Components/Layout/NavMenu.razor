@@ -13,62 +13,60 @@
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/produtos">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Produtos
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Produtos
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/categorias">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Categorias
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Categorias
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/subcategorias">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> subcategorias
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> SubCategorias
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/mododispos">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> ModDispo
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> ModDispo
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/promocoes">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Promocoes
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Promocoes
             </NavLink>
         </div>
-        <AuthorizeView>
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="/encomendas">
-                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Gerir Encomendas
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="/pagamentos">
-                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Gerir Pagamentos
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="/users">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Gerir Utilizadores
-                    </NavLink>
-                </div>
-            </Authorized>
-            <NotAuthorized>
+            <AuthorizeView>
+                <Authorized>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/encomendas">
+                            <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Gerir Encomendas
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/pagamentos">
+                            <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Gerir Pagamentos
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/users">
+                            <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Gerir Utilizadores
+                        </NavLink>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
 
-            </NotAuthorized>
-        </AuthorizeView>
+                </NotAuthorized>
+            </AuthorizeView>
     </nav>
 </div>
 
