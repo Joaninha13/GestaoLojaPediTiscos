@@ -4,6 +4,7 @@ using GestaoLojaPediTiscos.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GestaoLojaPediTiscos.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241230114120_add_favoritos_V2")]
+    partial class add_favoritos_V2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -186,14 +189,17 @@ namespace GestaoLojaPediTiscos.Migrations
                     b.Property<string>("ClienteId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("ProdutoId")
+                    b.Property<string>("ProdutoId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProdutoId1")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ClienteId");
 
-                    b.HasIndex("ProdutoId");
+                    b.HasIndex("ProdutoId1");
 
                     b.ToTable("Favoritos");
                 });
@@ -544,7 +550,9 @@ namespace GestaoLojaPediTiscos.Migrations
 
                     b.HasOne("GestaoLojaPediTiscos.Entities.Produtos", "Produto")
                         .WithMany()
-                        .HasForeignKey("ProdutoId");
+                        .HasForeignKey("ProdutoId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Cliente");
 

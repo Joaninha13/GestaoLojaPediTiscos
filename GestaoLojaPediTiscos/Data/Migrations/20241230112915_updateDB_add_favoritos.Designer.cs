@@ -4,6 +4,7 @@ using GestaoLojaPediTiscos.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GestaoLojaPediTiscos.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241230112915_updateDB_add_favoritos")]
+    partial class updateDB_add_favoritos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -173,29 +176,6 @@ namespace GestaoLojaPediTiscos.Migrations
                     b.HasIndex("EncomendaId");
 
                     b.ToTable("Envios");
-                });
-
-            modelBuilder.Entity("GestaoLojaPediTiscos.Entities.Favoritos", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ClienteId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("ProdutoId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClienteId");
-
-                    b.HasIndex("ProdutoId");
-
-                    b.ToTable("Favoritos");
                 });
 
             modelBuilder.Entity("GestaoLojaPediTiscos.Entities.ItensEncomendados", b =>
@@ -534,21 +514,6 @@ namespace GestaoLojaPediTiscos.Migrations
                         .IsRequired();
 
                     b.Navigation("Encomenda");
-                });
-
-            modelBuilder.Entity("GestaoLojaPediTiscos.Entities.Favoritos", b =>
-                {
-                    b.HasOne("GestaoLojaPediTiscos.Data.ApplicationUser", "Cliente")
-                        .WithMany()
-                        .HasForeignKey("ClienteId");
-
-                    b.HasOne("GestaoLojaPediTiscos.Entities.Produtos", "Produto")
-                        .WithMany()
-                        .HasForeignKey("ProdutoId");
-
-                    b.Navigation("Cliente");
-
-                    b.Navigation("Produto");
                 });
 
             modelBuilder.Entity("GestaoLojaPediTiscos.Entities.ItensEncomendados", b =>

@@ -10,4 +10,6 @@ public class AppConfig{
 
     public static readonly string telefone = "+351 259 999 999";
 
+    public static readonly string owners = "Bruno Gomes - 2017015265 & Diogo Ribeiro - ";
+
 }
