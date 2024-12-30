@@ -53,7 +53,7 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-       wait Init.CriaDadosIniciaisv2(userManager, roleManager);
+       await Init.CriaDadosIniciaisv2(userManager, roleManager);
     }
     catch (Exception)
     {
