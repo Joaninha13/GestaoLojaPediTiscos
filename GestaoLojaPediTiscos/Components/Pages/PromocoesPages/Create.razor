@@ -76,8 +76,10 @@
     protected override void OnInitialized(){
 
         // Define as datas iniciais com a data atual
-        promocoes.DataInicio = DateTime.Now;
-        promocoes.DataFim = DateTime.Now;
+        if (promocoes.DataInicio.Year == 0001){
+            promocoes.DataInicio = DateTime.Now;
+            promocoes.DataFim = DateTime.Now;
+        }
     }
 
     // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
