@@ -12,7 +12,7 @@
 
 @implements IAsyncDisposable
 
-@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager NavigationManager
 
 <PageTitle>Encomendas</PageTitle>
@@ -29,39 +29,140 @@
     }
 }
 
-<QuickGrid Class="table" Items="context.Encomendas.OrderBy(o => o.DataEncomenda)" @ref="refgrid" Pagination="@pagination">
-    <PropertyColumn Property="encomendas => encomendas.Cliente.Nome" />
-    <PropertyColumn Property="encomendas => encomendas.DataEncomenda" Sortable="true"/>
-    <PropertyColumn Property="encomendas => encomendas.Estado" Sortable="true"/>
-    <PropertyColumn Property="encomendas => encomendas.Total" />
+@if (encomendas == null || !encomendas.Any())
+{
+    <p><em>Carregando encomendas...</em></p>
+}
+else
+{
+    <QuickGrid Class="table" Items="@encomendas">
+        <PropertyColumn Property="e => e.Cliente.Nome" Title="Cliente" />
+        <PropertyColumn Property="e => e.DataEncomenda.ToShortDateString()" Title="Data da Encomenda" />
+        <PropertyColumn Property="e => e.Estado" Title="Estado" />
+        <PropertyColumn Property="e => e.Total" Title="Total" />
+        <TemplateColumn Context="e" Title="Ações">
+            @if (e?.Estado == "Concluido"){
+                <button class="btn btn-success" @onclick="() => ConfirmarVenda(e.Id)"> <img title="Aceitar" src="/img/AceitarIcon.png" style="height:30px" /></button>
+                <button class="btn btn-danger" @onclick="() => RejeitarVenda(e.Id)"><img title="Recusar" src="/img/RejeitarIcon.png" style="height:30px" /></button>
+            }
+            else if (e?.Estado == "Confirmado"){
+                <button class="btn btn-primary" @onclick="() => ExpedirEncomenda(e.Id)"><img title="Enviar" src="/img/EnviarIcon.png" style="height:30px" /></button>
+            }
+        </TemplateColumn>
+    </QuickGrid>
+}
 
-    <TemplateColumn Context="encomendas">
-        <a title="Detalhes" href="@($"encomendas/details?id={encomendas.Id}")"><img title="Detalhes" src="/img/detailsicon.png" style="height:30px" /></a>
-    </TemplateColumn>
-</QuickGrid>
-
-<div class="page-size-chooser">
-    Encomendas por página:
-    <select @bind="@pagination.ItemsPerPage">
-        <option>5</option>
-        <option>10</option>
-        <option>15</option>
-    </select>
-</div>
-<div class="card-footer">
-    <Paginator State="@pagination" />
+<div class="mt-3">
+    @if (!string.IsNullOrEmpty(MensagemErro))
+    {
+        <div class="alert alert-danger">@MensagemErro</div>
+    }
+    @if (!string.IsNullOrEmpty(MensagemSucesso))
+    {
+        <div class="alert alert-success">@MensagemSucesso</div>
+    }
 </div>
 
 @code {
     private ApplicationDbContext context = default!;
+    private IQueryable<Encomendas> encomendas = new List<Encomendas>().AsQueryable();
 
-    QuickGrid<Encomendas>? refgrid;
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
 
-    // Paginação
-    PaginationState pagination = new PaginationState { ItemsPerPage = 5 };
+    protected override async Task OnInitializedAsync()
+    {
+        context = await DbFactory.CreateDbContextAsync();
+        await CarregarEncomendas();
+    }
 
-    protected override void OnInitialized(){
-        context = DbFactory.CreateDbContext();
+    private async Task CarregarEncomendas()
+    {
+        var enc = await context.Encomendas.Include(e => e.Cliente).ToListAsync();
+        encomendas = enc.AsQueryable();
+        StateHasChanged();
+    }
+
+    private async Task ConfirmarVenda(int encomendaId)
+    {
+        var encomenda = await context.Encomendas.FirstOrDefaultAsync(e => e.Id == encomendaId);
+        if (encomenda != null)
+        {
+            encomenda.Estado = "Confirmado";
+            context.Encomendas.Update(encomenda);
+
+            var itens = await context.ItensEncomendados.Where(i => i.EncomendaId == encomendaId).ToListAsync();
+            foreach (var item in itens)
+            {
+                var produto = await context.Produtos.FirstOrDefaultAsync(p => p.Id == item.ProdutoId);
+                if (produto != null)
+                {
+                    produto.NVendas += item.Quantidade;
+                    context.Produtos.Update(produto);
+                }
+            }
+
+            await context.SaveChangesAsync();
+            MensagemSucesso = "Encomenda Confirmada com sucesso.";
+        }
+    }
+
+    private async Task RejeitarVenda(int encomendaId)
+    {
+        var encomenda = await context.Encomendas.FirstOrDefaultAsync(e => e.Id == encomendaId);
+        if (encomenda != null)
+        {
+            encomenda.Estado = "Rejeitado";
+            context.Encomendas.Update(encomenda);
+
+            var itens = await context.ItensEncomendados.Where(i => i.EncomendaId == encomendaId).ToListAsync();
+            foreach (var item in itens)
+            {
+                var produto = await context.Produtos.FirstOrDefaultAsync(p => p.Id == item.ProdutoId);
+                if (produto != null)
+                {
+                    produto.Stock += item.Quantidade;
+                    context.Produtos.Update(produto);
+                }
+            }
+
+            await context.SaveChangesAsync();
+            MensagemSucesso = "Encomenda Rejeitada com sucesso.";
+
+        }
+    }
+
+    private async Task ExpedirEncomenda(int encomendaId)
+    {
+        var encomenda = await context.Encomendas.FirstOrDefaultAsync(e => e.Id == encomendaId);
+        if (encomenda != null){
+
+            var envios = await context.Envios.FirstOrDefaultAsync(e => e.EncomendaId == encomendaId);
+
+            if (envios != null){
+                MensagemErro = "Encomenda já enviada.";
+                return;
+            }
+
+            var pagamento = await context.Pagamentos.FirstOrDefaultAsync(p => p.EncomendaId == encomendaId);
+            if (pagamento?.Estado == "Pago")
+            {
+                var envio = new Envios
+                    {
+                        EncomendaId = encomenda.Id,
+                        DataEnvio = DateTime.Now,
+                        Estado = "Enviado"
+                    };
+                context.Envios.Add(envio);
+                await context.SaveChangesAsync();
+                MensagemSucesso = "Encomenda enviada com sucesso.";
+            }
+            else
+            {
+                MensagemErro = "Não é possível enviar a encomenda: pagamento não confirmado.";
+                return;
+            }
+        }
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();

@@ -7,52 +7,95 @@
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using GestaoLojaPediTiscos.Entities
 @using GestaoLojaPediTiscos.Data
+
+@rendermode InteractiveServer
+
 @implements IAsyncDisposable
-@inject IDbContextFactory<GestaoLojaPediTiscos.Data.ApplicationDbContext> DbFactory
+
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 
 <PageTitle>Pagamentos</PageTitle>
 
 <h1>Listagem de Pagamentos</h1>
 
-<QuickGrid Class="table" Items="context.Pagamentos">
-    <PropertyColumn Property="pagamentos => pagamentos.EncomendaId" />
-    <PropertyColumn Property="pagamentos => pagamentos.DataPagamento" />
-    <PropertyColumn Property="pagamentos => pagamentos.Valor" />
-    <PropertyColumn Property="pagamentos => pagamentos.Estado" />
-
-    <TemplateColumn Context="pagamentos">
-        @if (pagamentos.Estado == "Pendente"){
-            <button class="btn btn-success btn-sm" @onclick="() => AceitarPagamento(pagamentos.Id)"><img title="Aceitar" src="/img/AceitarIcon.png" style="height:30px" /></button>
-            <button class="btn btn-danger btn-sm" @onclick="() => RejeitarPagamento(pagamentos.Id)"><img title="Rejeitar" src="/img/RejeitarIcon.png" style="height:30px" /></button> 
+@if (pagamentos == null || !pagamentos.Any())
+{
+    <p><em>Carregando pagamentos...</em></p>
+}
+else
+{
+    <QuickGrid Class="table" Items="@pagamentos">
+        <PropertyColumn Property="p => p.EncomendaId" Title="Encomenda ID" />
+        <PropertyColumn Property="p => p.DataPagamento.ToShortDateString()" Title="Data do Pagamento" />
+        <PropertyColumn Property="p => p.Valor" Title="Valor" />
+        <PropertyColumn Property="p => p.Estado" Title="Estado" />
+        <TemplateColumn Context="p" Title="Ações">
+            @if (p.Estado == "Pendente")
+            {
+                <button class="btn btn-success btn-sm" @onclick='() => AlterarEstadoPagamento(p.Id, "Pago")'>
+                    <img title="Aceitar" src="/img/AceitarIcon.png" style="height:30px" />
+                </button>
+                <button class="btn btn-danger btn-sm" @onclick='() => AlterarEstadoPagamento(p.Id, "Rejeitado")'>
+                    <img title="Rejeitar" src="/img/RejeitarIcon.png" style="height:30px" />
+                </button>
             }
-    </TemplateColumn>
-</QuickGrid>
+        </TemplateColumn>
+    </QuickGrid>
+
+    <div class="mt-3">
+        @if (!string.IsNullOrEmpty(MensagemErro))
+        {
+            <div class="alert alert-danger">@MensagemErro</div>
+        }
+        @if (!string.IsNullOrEmpty(MensagemSucesso))
+        {
+            <div class="alert alert-success">@MensagemSucesso</div>
+        }
+    </div>
+}
 
 @code {
     private ApplicationDbContext context = default!;
+    private IQueryable<Pagamentos> pagamentos = new List<Pagamentos>().AsQueryable();
 
-    protected override void OnInitialized()
+    public string MensagemErro { get; set; } = string.Empty;
+    public string MensagemSucesso { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
     {
-        context = DbFactory.CreateDbContext();
+        context = await DbFactory.CreateDbContextAsync();
+        await CarregarPagamentos();
     }
 
-    private async Task AceitarPagamento(int pagamentoId)
+    private async Task CarregarPagamentos()
+    {
+        var pag = await context.Pagamentos.ToListAsync();
+        pagamentos = pag.AsQueryable();
+        StateHasChanged();
+    }
+
+    private async Task AlterarEstadoPagamento(int pagamentoId, string novoEstado)
     {
         var pagamento = await context.Pagamentos.FirstOrDefaultAsync(p => p.Id == pagamentoId);
-        if (pagamento is not null){
-            pagamento.Estado = "Pago";
+        if (pagamento != null)
+        {
+            pagamento.Estado = novoEstado;
             context.Pagamentos.Update(pagamento);
-            await context.SaveChangesAsync();
+            try
+            {
+                await context.SaveChangesAsync();
+                MensagemSucesso = $"Estado do pagamento alterado para '{novoEstado}' com sucesso!";
+                await CarregarPagamentos();
+            }
+            catch (Exception ex)
+            {
+                MensagemErro = "Erro ao atualizar estado do pagamento. Tente novamente.";
+                Console.WriteLine(ex.Message);
+            }
         }
-    }
-
-    private async Task RejeitarPagamento(int pagamentoId)
-    {
-        var pagamento = await context.Pagamentos.FirstOrDefaultAsync(p => p.Id == pagamentoId);
-        if (pagamento is not null){
-            pagamento.Estado = "Rejeitado";
-            context.Pagamentos.Update(pagamento);
-            await context.SaveChangesAsync();
+        else
+        {
+            MensagemErro = "Pagamento não encontrado.";
         }
     }
 
